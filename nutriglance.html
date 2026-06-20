@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NutriGlance – Your Personal AI Dietitian</title>
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Inter for UI clarity, Space Grotesk for bold headings -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@700;800&display=swap" rel="stylesheet" />
+
+  <script>
+    // ─── Tailwind custom config ───────────────────────────────────────────────
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand:    '#10B981',   // emerald/mint — header & accents
+            charcoal: '#0F172A',   // deep charcoal — primary text
+            bg:       '#EFF7F4',   // soft off-white tint — page background
+            card:     '#FFFFFF',   // card surface
+            muted:    '#94A3B8',   // placeholder / secondary text
+          },
+          fontFamily: {
+            display: ['"Space Grotesk"', 'sans-serif'],
+            body:    ['"Inter"',         'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    /* ── Base resets ── */
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; }
+
+    /* ── Circular progress ring ── */
+    .ring-track { stroke: #E2E8F0; }
+    .ring-fill  {
+      stroke: #0F172A;
+      stroke-linecap: round;
+      transform-origin: 50% 50%;
+      transform: rotate(-90deg);
+      transition: stroke-dashoffset 0.6s ease;
+    }
+
+    /* ── Skeleton shimmer animation ── */
+    @keyframes shimmer {
+      0%   { background-position: -400px 0; }
+      100% { background-position:  400px 0; }
+    }
+    .skeleton {
+      background: linear-gradient(90deg, #E2E8F0 25%, #CBD5E1 50%, #E2E8F0 75%);
+      background-size: 400px 100%;
+      animation: shimmer 1.4s infinite linear;
+      border-radius: 6px;
+    }
+
+    /* ── Upload drop-zone hover ring ── */
+    #upload-zone:hover  { border-color: #10B981; }
+    #upload-zone:active { transform: scale(0.98); }
+
+    /* ── Meal-item entrance animation ── */
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0);   }
+    }
+    .meal-item { animation: fadeSlideIn 0.3s ease both; }
+
+    /* ── Toast notification ── */
+    #toast {
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    #toast.hidden { opacity: 0; pointer-events: none; transform: translateY(8px); }
+    #toast.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── Navbar collapse ── */
+    #mobile-menu {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s ease, opacity 0.3s ease;
+      opacity: 0;
+    }
+    #mobile-menu.open {
+      max-height: 400px;
+      opacity: 1;
+    }
+
+    /* ── Active nav link indicator ── */
+    .nav-link.active {
+      color: #0F172A;
+      font-weight: 700;
+    }
+    .nav-link.active::after {
+      content: '';
+      display: block;
+      height: 2px;
+      background: #0F172A;
+      border-radius: 2px;
+      margin-top: 2px;
+    }
+
+    /* ── Footer link hover ── */
+    .footer-link:hover { color: #10B981; }
+
+    /* ── Hamburger bar animation ── */
+    .ham-bar { transition: transform 0.25s ease, opacity 0.25s ease; }
+    body.menu-open #ham-top    { transform: translateY(6px) rotate(45deg); }
+    body.menu-open #ham-mid    { opacity: 0; transform: scaleX(0); }
+    body.menu-open #ham-bot    { transform: translateY(-6px) rotate(-45deg); }
+  </style>
+</head>
+
+<body class="bg-bg min-h-screen font-body text-charcoal">
+
+  <!-- ════════════════════════════════════════════════════════════════
+       ONBOARDING MODAL — collects profile details and calculates
+       personalised daily targets. Hidden by default; the inline script
+       right below shows it instantly (before anything else renders) only
+       if no profile has been saved to localStorage yet.
+  ════════════════════════════════════════════════════════════════ -->
+  <div id="onboarding-overlay"
+       class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4
+              bg-charcoal/60 backdrop-blur-sm">
+    <div class="bg-card w-full max-w-md rounded-2xl shadow-xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
+
+      <div class="text-center mb-6">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-3">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/>
+            <path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+            <line x1="7" y1="12" x2="17" y2="12"/>
+          </svg>
+        </div>
+        <h2 class="font-display text-2xl font-extrabold text-charcoal">Let's set up your goals</h2>
+        <p class="text-sm text-muted mt-1.5">A few quick details so NutriGlance can personalise your daily targets.</p>
+      </div>
+
+      <form id="onboarding-form" class="flex flex-col gap-5" novalidate>
+
+        <!-- Gender -->
+        <div>
+          <label class="block text-xs font-semibold text-charcoal uppercase tracking-wide mb-2">Gender</label>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="cursor-pointer">
+              <input type="radio" name="onb-gender" value="male" class="peer sr-only" checked />
+              <div class="peer-checked:border-brand peer-checked:bg-emerald-50 peer-checked:text-charcoal
+                          border-2 border-slate-200 rounded-xl py-3 text-center text-sm font-semibold
+                          text-muted transition-colors duration-150">
+                ♂ Male
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="onb-gender" value="female" class="peer sr-only" />
+              <div class="peer-checked:border-brand peer-checked:bg-emerald-50 peer-checked:text-charcoal
+                          border-2 border-slate-200 rounded-xl py-3 text-center text-sm font-semibold
+                          text-muted transition-colors duration-150">
+                ♀ Female
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Age / Weight / Height -->
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label for="onb-age" class="block text-xs font-semibold text-charcoal uppercase tracking-wide mb-1.5">Age</label>
+            <input id="onb-age" type="number" inputmode="numeric" min="10" max="100" placeholder="28" required
+                   class="w-full text-sm bg-slate-50 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand" />
+          </div>
+          <div>
+            <label for="onb-weight" class="block text-xs font-semibold text-charcoal uppercase tracking-wide mb-1.5">
+              Weight <span class="text-muted normal-case font-normal">(kg)</span>
+            </label>
+            <input id="onb-weight" type="number" inputmode="decimal" min="20" max="300" step="0.1" placeholder="68" required
+                   class="w-full text-sm bg-slate-50 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand" />
+          </div>
+          <div>
+            <label for="onb-height" class="block text-xs font-semibold text-charcoal uppercase tracking-wide mb-1.5">
+              Height <span class="text-muted normal-case font-normal">(cm)</span>
+            </label>
+            <input id="onb-height" type="number" inputmode="numeric" min="100" max="250" placeholder="172" required
+                   class="w-full text-sm bg-slate-50 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand" />
+          </div>
+        </div>
+
+        <!-- Activity level -->
+        <div>
+          <label for="onb-activity" class="block text-xs font-semibold text-charcoal uppercase tracking-wide mb-1.5">Activity Level</label>
+          <select id="onb-activity" required
+                  class="w-full text-sm bg-slate-50 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand">
+            <option value="1.2">Sedentary — little or no exercise</option>
+            <option value="1.375">Lightly Active — light exercise 1–3 days/wk</option>
+            <option value="1.55" selected>Moderately Active — moderate exercise 3–5 days/wk</option>
+            <option value="1.725">Very Active — hard exercise 6–7 days/wk</option>
+          </select>
+        </div>
+
+        <p id="onboarding-error" class="hidden text-xs font-semibold text-red-500 text-center -mb-1"></p>
+
+        <button type="submit"
+                class="bg-brand text-white font-semibold text-sm rounded-xl py-3 mt-1
+                       hover:bg-emerald-600 active:scale-95 transition-all duration-150 shadow-sm">
+          Calculate My Goals
+        </button>
+        <p class="text-[11px] text-muted text-center -mt-2">You can update these anytime in Settings.</p>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Runs immediately, before the rest of the page's content or scripts —
+    // shows the onboarding overlay instantly with no flash if (and only if)
+    // no profile has been saved to localStorage yet.
+    (function () {
+      let hasProfile = false;
+      try {
+        hasProfile = !!JSON.parse(localStorage.getItem('nutriglance_profile') || 'null');
+      } catch {
+        hasProfile = false;
+      }
+      if (!hasProfile) {
+        document.getElementById('onboarding-overlay').classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+      }
+    })();
+  </script>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       NAVBAR
+  ════════════════════════════════════════════════════════════════ -->
+  <nav class="bg-brand shadow-sm sticky top-0 z-40">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6">
+      <div class="flex items-center justify-between h-14">
+
+        <!-- Logo -->
+        <a href="index.html" class="flex items-center gap-2 flex-shrink-0">
+          <span class="font-display text-xl font-extrabold tracking-tight">
+            <span class="text-charcoal">Nutri</span><span class="text-white">Glance</span>
+          </span>
+          <span class="hidden sm:inline text-charcoal/70 font-medium text-xs">
+            Your personal AI dietitian
+          </span>
+        </a>
+
+        <!-- Desktop nav links -->
+        <div class="hidden md:flex items-center gap-1">
+          <a href="#" class="nav-link active px-4 py-1.5 text-sm text-charcoal/90 rounded-lg hover:bg-white/20 transition-colors">Dashboard</a>
+          <a href="#" class="nav-link px-4 py-1.5 text-sm text-charcoal/70 rounded-lg hover:bg-white/20 hover:text-charcoal transition-colors">Meals</a>
+          <a href="#" class="nav-link px-4 py-1.5 text-sm text-charcoal/70 rounded-lg hover:bg-white/20 hover:text-charcoal transition-colors">Progress</a>
+          <a href="aichef.html" class="nav-link px-4 py-1.5 text-sm text-charcoal/70 rounded-lg hover:bg-white/20 hover:text-charcoal transition-colors">AI Chef</a>
+          <a href="#" class="nav-link px-4 py-1.5 text-sm text-charcoal/70 rounded-lg hover:bg-white/20 hover:text-charcoal transition-colors">Settings</a>
+        </div>
+
+        <!-- Desktop right: avatar -->
+        <div class="hidden md:flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-charcoal/20 flex items-center justify-center text-charcoal font-bold text-sm select-none cursor-pointer hover:bg-charcoal/30 transition-colors" title="Profile">
+            A
+          </div>
+        </div>
+
+        <!-- Hamburger (mobile) -->
+        <button
+          id="hamburger"
+          aria-label="Toggle navigation menu"
+          aria-expanded="false"
+          aria-controls="mobile-menu"
+          class="md:hidden flex flex-col justify-center items-center w-9 h-9 gap-[5px] rounded-lg hover:bg-white/20 transition-colors"
+        >
+          <span id="ham-top" class="ham-bar block w-5 h-0.5 bg-charcoal rounded-full origin-center"></span>
+          <span id="ham-mid" class="ham-bar block w-5 h-0.5 bg-charcoal rounded-full origin-center"></span>
+          <span id="ham-bot" class="ham-bar block w-5 h-0.5 bg-charcoal rounded-full origin-center"></span>
+        </button>
+
+      </div><!-- /inner row -->
+    </div><!-- /max-w -->
+
+    <!-- Mobile collapsible menu -->
+    <div id="mobile-menu" role="navigation" aria-label="Mobile navigation">
+      <div class="max-w-5xl mx-auto px-4 pb-4 flex flex-col gap-1">
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-charcoal bg-white/25">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Dashboard
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-charcoal/70 hover:bg-white/20 hover:text-charcoal transition-colors">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          Meals
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-charcoal/70 hover:bg-white/20 hover:text-charcoal transition-colors">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Progress
+        </a>
+        <a href="aichef.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-charcoal/70 hover:bg-white/20 hover:text-charcoal transition-colors">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>
+          AI Chef
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-charcoal/70 hover:bg-white/20 hover:text-charcoal transition-colors">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+          Settings
+        </a>
+        <div class="border-t border-white/20 mt-1 pt-3 flex items-center gap-3 px-3">
+          <div class="w-8 h-8 rounded-full bg-charcoal/20 flex items-center justify-center text-charcoal font-bold text-sm">A</div>
+          <div>
+            <p class="text-sm font-semibold text-charcoal">Alex</p>
+            <p class="text-xs text-charcoal/60">alex@nutriglance.app</p>
+          </div>
+        </div>
+      </div>
+    </div><!-- /mobile-menu -->
+
+  </nav>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       MAIN DASHBOARD GRID
+  ════════════════════════════════════════════════════════════════ -->
+  <main class="max-w-5xl mx-auto px-4 py-8">
+
+    <!--
+      Desktop layout (md+):  3 columns
+        Col 1 – Calories & Macros card (narrow)
+        Col 2 – Upload + Recent Meals (wide)
+        Col 3 – Quick actions (Scan / AI Chef)
+      Mobile: single column, stacked
+    -->
+    <div class="grid grid-cols-1 md:grid-cols-[260px_1fr_200px] gap-5">
+
+      <!-- ────────────────────────────────────────────────────────────
+           COLUMN 1 — CALORIES & MACROS CARD
+      ──────────────────────────────────────────────────────────────── -->
+      <section class="bg-card rounded-2xl p-6 shadow-sm flex flex-col gap-6">
+
+        <!-- Section heading -->
+        <h2 class="font-display text-2xl font-extrabold leading-tight text-charcoal">
+          Calories<br/>consumed
+        </h2>
+
+        <!-- SVG circular progress ring -->
+        <div class="flex items-center justify-center">
+          <svg id="calorie-ring" width="160" height="160" viewBox="0 0 160 160">
+            <!-- Track (background circle) -->
+            <circle
+              class="ring-track"
+              cx="80" cy="80" r="64"
+              fill="none" stroke-width="14"
+            />
+            <!-- Progress fill — dasharray/dashoffset set by JS -->
+            <circle
+              id="ring-fill-el"
+              class="ring-fill"
+              cx="80" cy="80" r="64"
+              fill="none" stroke-width="14"
+              stroke-dasharray="402"
+              stroke-dashoffset="402"
+            />
+            <!-- Center label -->
+            <text x="80" y="74" text-anchor="middle"
+                  font-family="Space Grotesk, sans-serif"
+                  font-size="22" font-weight="800"
+                  fill="#0F172A" id="ring-label-consumed">0</text>
+            <text x="80" y="96" text-anchor="middle"
+                  font-family="Inter, sans-serif"
+                  font-size="12" font-weight="500"
+                  fill="#64748B">
+              /<tspan id="ring-label-goal">2100</tspan> kcal
+            </text>
+          </svg>
+        </div>
+
+        <!-- Macro breakdown -->
+        <div class="flex flex-col gap-3 text-sm font-semibold">
+
+          <!-- Protein -->
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>Protein</span>
+              <span>
+                <span id="macro-protein-consumed">0</span>/<span id="macro-protein-goal">90</span>g
+              </span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2">
+              <div id="bar-protein"
+                   class="h-2 rounded-full bg-brand transition-all duration-500"
+                   style="width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- Carbs -->
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>Carbs</span>
+              <span>
+                <span id="macro-carbs-consumed">0</span>/<span id="macro-carbs-goal">200</span>g
+              </span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2">
+              <div id="bar-carbs"
+                   class="h-2 rounded-full bg-emerald-400 transition-all duration-500"
+                   style="width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- Fibre -->
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>Fibre</span>
+              <span>
+                <span id="macro-fibre-consumed">0</span>/<span id="macro-fibre-goal">70</span>g
+              </span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2">
+              <div id="bar-fibre"
+                   class="h-2 rounded-full bg-teal-300 transition-all duration-500"
+                   style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+      </section><!-- /col 1 -->
+
+
+      <!-- ────────────────────────────────────────────────────────────
+           COLUMN 2 — UPLOAD ZONE + RECENT MEALS
+      ──────────────────────────────────────────────────────────────── -->
+      <div class="flex flex-col gap-5">
+
+        <!-- Upload box -->
+        <!-- Hidden file input — lives outside the zone so clicks don't bubble weirdly -->
+        <input id="file-input" type="file" accept="image/*" class="hidden" aria-hidden="true" />
+
+        <!-- Upload / Analysis card -->
+        <div class="bg-card rounded-2xl shadow-sm border-2 border-dashed border-slate-200
+                    transition-colors duration-200 overflow-hidden relative"
+             id="upload-outer">
+
+          <!-- Default drop zone (shown when idle) -->
+          <div id="upload-zone"
+               role="button" tabindex="0" aria-label="Upload a meal photo"
+               class="flex flex-col items-center justify-center gap-3 py-10 cursor-pointer select-none">
+
+            <!-- Cloud icon -->
+            <svg width="56" height="46" viewBox="0 0 60 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M30 32V18M30 18L24 24M30 18L36 24" stroke="#94A3B8" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M44 38H16C11.582 38 8 34.418 8 30C8 26.19 10.598 22.988 14.148 22.152
+                       C14.052 21.608 14 21.048 14 20.476C14 15.248 18.248 11 23.476 11
+                       C26.02 11 28.32 12.018 30 13.68C31.68 12.018 33.98 11 36.524 11
+                       C41.752 11 46 15.248 46 20.476C46 21.048 45.948 21.608 45.852 22.152
+                       C49.402 22.988 52 26.19 52 30C52 34.418 48.418 38 44 38Z"
+                    stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <p id="upload-label" class="text-muted font-semibold text-sm text-center px-4">
+              Upload your meals here
+            </p>
+            <p class="text-slate-400 text-xs">Click to browse · AI will analyse nutrition instantly</p>
+          </div>
+
+          <!-- Analysing state (hidden by default) -->
+          <div id="upload-analysing" class="hidden flex-col items-center justify-center gap-4 py-10 px-6">
+            <!-- Preview thumbnail -->
+            <img id="upload-preview" src="" alt="Meal preview"
+                 class="w-28 h-28 object-cover rounded-2xl shadow-md" />
+            <!-- Spinner + label -->
+            <div class="flex flex-col items-center gap-2">
+              <svg class="animate-spin text-brand" width="28" height="28" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="#E2E8F0" stroke-width="3"/>
+                <path d="M12 2a10 10 0 0 1 10 10" stroke="#10B981" stroke-width="3" stroke-linecap="round"/>
+              </svg>
+              <p class="text-sm font-semibold text-charcoal">Analysing nutrition…</p>
+              <p class="text-xs text-muted">AI is reading your meal photo</p>
+            </div>
+          </div>
+
+          <!-- Result state (hidden by default) -->
+          <div id="upload-result" class="hidden flex-col gap-4 p-5">
+            <div class="flex gap-4 items-start">
+              <img id="result-thumb" src="" alt="Meal"
+                   class="w-20 h-20 object-cover rounded-xl shadow flex-shrink-0" />
+              <div class="flex-1 min-w-0">
+                <p class="font-display font-extrabold text-base text-charcoal" id="result-name">—</p>
+                <p class="text-xs text-muted mt-0.5" id="result-desc"></p>
+                <!-- Macro pills -->
+                <div class="flex flex-wrap gap-1.5 mt-2" id="result-pills"></div>
+              </div>
+            </div>
+            <!-- Action row -->
+            <div class="flex gap-2">
+              <button id="result-log-btn"
+                class="flex-1 bg-brand text-white text-sm font-semibold rounded-xl py-2
+                       hover:bg-emerald-600 active:scale-95 transition-all duration-150">
+                ✅ Log this meal
+              </button>
+              <button id="result-retry-btn"
+                class="px-4 text-sm font-semibold text-muted border border-slate-200 rounded-xl
+                       hover:bg-slate-50 active:scale-95 transition-all duration-150">
+                Try another
+              </button>
+            </div>
+          </div>
+
+        </div><!-- /upload-outer -->
+
+        <!-- Recent Meals card -->
+        <div class="bg-card rounded-2xl p-6 shadow-sm flex-1">
+          <div class="flex items-center justify-between mb-5">
+            <h2 class="font-display text-xl font-extrabold">
+              Recent Meals <span class="text-muted font-body font-normal text-sm">(Today)</span>
+            </h2>
+            <!-- Clear button — only visible when there are meals -->
+            <button
+              id="clear-btn"
+              class="hidden text-xs font-semibold text-red-400 hover:text-red-600
+                     border border-red-200 hover:border-red-400 rounded-lg px-3 py-1
+                     transition-colors duration-150"
+              aria-label="Clear all logged meals"
+            >
+              Clear all
+            </button>
+          </div>
+
+          <!-- Meal list / skeleton placeholder -->
+          <div id="meals-container" class="flex flex-col gap-3">
+            <!-- Skeleton lines shown when no meals are logged — replaced by JS -->
+            <div id="skeleton-placeholder" class="flex flex-col gap-3">
+              <div class="skeleton h-4 w-3/4"></div>
+              <div class="skeleton h-4 w-1/2"></div>
+              <div class="skeleton h-4 w-5/6"></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /col 2 -->
+
+
+      <!-- ────────────────────────────────────────────────────────────
+           COLUMN 3 — QUICK ACTIONS
+      ──────────────────────────────────────────────────────────────── -->
+      <div class="flex flex-col gap-5">
+
+        <!-- Scan a Meal -->
+        <button
+          id="scan-btn"
+          class="bg-card rounded-2xl shadow-sm px-5 py-6 text-left font-display text-xl
+                 font-extrabold text-charcoal hover:shadow-md hover:bg-emerald-50
+                 active:scale-95 transition-all duration-150 border-2 border-transparent
+                 hover:border-brand focus:outline-none focus:ring-2 focus:ring-brand
+                 focus:ring-offset-2"
+          aria-label="Simulate scanning a meal"
+        >
+          <div class="flex items-center gap-3">
+            <!-- Scan icon -->
+            <span class="text-brand text-2xl" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10B981"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
+                <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
+                <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
+                <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+                <line x1="7" y1="12" x2="17" y2="12"/>
+              </svg>
+            </span>
+            Scan a Meal
+          </div>
+          <p class="text-xs font-body font-normal text-muted mt-1">
+            Auto-detect food & log macros
+          </p>
+        </button>
+
+        <!-- AI Chef -->
+        <a
+          id="ai-chef-btn"
+          href="aichef.html"
+          class="bg-card rounded-2xl shadow-sm px-5 py-6 text-left font-display text-xl
+                 font-extrabold text-charcoal hover:shadow-md hover:bg-emerald-50
+                 active:scale-95 transition-all duration-150 border-2 border-transparent
+                 hover:border-brand focus:outline-none focus:ring-2 focus:ring-brand
+                 focus:ring-offset-2 block"
+          aria-label="Open AI Chef for meal suggestions"
+        >
+          <div class="flex items-center gap-3">
+            <!-- Chef hat icon -->
+            <span aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10B981"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/>
+                <line x1="6" y1="17" x2="18" y2="17"/>
+              </svg>
+            </span>
+            AI Chef
+          </div>
+          <p class="text-xs font-body font-normal text-muted mt-1">
+            Get personalised recipe ideas
+          </p>
+        </a>
+
+        <!-- Daily goal progress pill -->
+        <div class="bg-emerald-50 rounded-2xl px-5 py-4 shadow-sm">
+          <p class="text-xs font-semibold text-brand uppercase tracking-wide mb-1">
+            Daily Goal
+          </p>
+          <p id="goal-pct-label" class="font-display text-3xl font-extrabold text-charcoal">
+            0%
+          </p>
+          <p class="text-xs text-muted mt-0.5">of calorie target met</p>
+          <!-- Mini progress bar inside the pill -->
+          <div class="w-full bg-emerald-100 rounded-full h-1.5 mt-3">
+            <div id="goal-bar"
+                 class="h-1.5 rounded-full bg-brand transition-all duration-500"
+                 style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Hydration tracker -->
+        <div class="bg-card rounded-2xl px-5 py-4 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <p class="text-xs font-semibold text-charcoal uppercase tracking-wide">Hydration</p>
+            <span class="text-xs text-muted"><span id="water-count">0</span>/8 glasses</span>
+          </div>
+          <div id="water-drops" class="flex gap-1.5 flex-wrap"></div>
+          <button id="water-reset"
+                  class="mt-3 text-xs text-muted hover:text-red-400 transition-colors duration-150">
+            Reset
+          </button>
+        </div>
+
+        <!-- Tip of the day -->
+        <div class="bg-card rounded-2xl px-5 py-4 shadow-sm flex gap-3 items-start">
+          <span class="text-xl mt-0.5 flex-shrink-0" aria-hidden="true">💡</span>
+          <div>
+            <p class="text-xs font-semibold text-brand uppercase tracking-wide mb-1">Tip</p>
+            <p id="daily-tip" class="text-xs text-charcoal leading-relaxed"></p>
+          </div>
+        </div>
+
+      </div><!-- /col 3 -->
+
+    </div><!-- /grid -->
+  </main><!-- /main -->
+
+
+  <!-- ════════════════════════════════════════════════════════════════
+       TOAST NOTIFICATION
+  ════════════════════════════════════════════════════════════════ -->
+  <div
+    id="toast"
+    role="status"
+    aria-live="polite"
+    class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50
+           bg-charcoal text-white text-sm font-semibold
+           px-5 py-3 rounded-xl shadow-lg pointer-events-none"
+  >
+    Meal logged!
+  </div>
+
+
+  <!-- ════════════════════════════════════════════════════════════════
+       JAVASCRIPT — App Logic
+  ════════════════════════════════════════════════════════════════ -->
+  <script>
+    // ──────────────────────────────────────────────────────────────────
+    // CONSTANTS & GOALS
+    // ──────────────────────────────────────────────────────────────────
+    const GOALS = {
+      kcal:    2100,
+      protein: 90,
+      carbs:   200,
+      fibre:   70,
+    };
+
+    // ──────────────────────────────────────────────────────────────────
+    // PROFILE — onboarding inputs + calculated targets
+    // ──────────────────────────────────────────────────────────────────
+    const PROFILE_KEY = 'nutriglance_profile';
+
+    function loadProfile() {
+      try {
+        const raw = localStorage.getItem(PROFILE_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch {
+        return null;
+      }
+    }
+
+    function saveProfile(profile) {
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    }
+
+    // If a profile already exists, override the hardcoded defaults above
+    // with the user's personalised targets before anything renders.
+    const savedProfile = loadProfile();
+    if (savedProfile) {
+      GOALS.kcal    = savedProfile.targetKcal;
+      GOALS.protein = savedProfile.targetProtein;
+      GOALS.carbs   = savedProfile.targetCarbs;
+      GOALS.fibre   = savedProfile.targetFiber;
+    }
+
+    // Keeps the "/ 90g" style goal labels in the macro card in sync with GOALS
+    function syncGoalLabels() {
+      document.getElementById('macro-protein-goal').textContent = GOALS.protein;
+      document.getElementById('macro-carbs-goal').textContent   = GOALS.carbs;
+      document.getElementById('macro-fibre-goal').textContent   = GOALS.fibre;
+      document.getElementById('ring-label-goal').textContent    = GOALS.kcal;
+    }
+    syncGoalLabels();
+
+    // Storage key
+    const STORAGE_KEY = 'nutriglance_meals';
+
+    // ──────────────────────────────────────────────────────────────────
+    // MOCK FOOD DATABASE
+    // Each scan randomly picks one of these items
+    // ──────────────────────────────────────────────────────────────────
+    const FOOD_DB = [
+      { name: 'Grilled Chicken & Rice',   kcal: 420, protein: 38, carbs: 45, fibre: 3  },
+      { name: 'Avocado Toast',            kcal: 310, protein: 9,  carbs: 32, fibre: 7  },
+      { name: 'Spinach & Paneer Curry',   kcal: 380, protein: 22, carbs: 28, fibre: 6  },
+      { name: 'Oatmeal with Berries',     kcal: 260, protein: 8,  carbs: 46, fibre: 8  },
+      { name: 'Tuna Salad Wrap',          kcal: 340, protein: 30, carbs: 30, fibre: 4  },
+      { name: 'Dal & Roti',               kcal: 390, protein: 18, carbs: 58, fibre: 11 },
+      { name: 'Greek Yogurt Parfait',     kcal: 230, protein: 14, carbs: 28, fibre: 3  },
+      { name: 'Vegetable Stir Fry & Noodles', kcal: 360, protein: 12, carbs: 52, fibre: 7 },
+      { name: 'Boiled Eggs & Whole Wheat Toast', kcal: 290, protein: 18, carbs: 26, fibre: 4 },
+      { name: 'Fruit & Nut Smoothie Bowl', kcal: 310, protein: 10, carbs: 50, fibre: 8 },
+    ];
+
+    // ──────────────────────────────────────────────────────────────────
+    // STATE — load from localStorage or start fresh
+    // ──────────────────────────────────────────────────────────────────
+    function loadMeals() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveMeals(meals) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(meals));
+    }
+
+    // Compute totals purely from stored meals — starts at zero
+    function computeTotals(meals) {
+      const totals = { kcal: 0, protein: 0, carbs: 0, fibre: 0 };
+      for (const m of meals) {
+        totals.kcal    += m.kcal;
+        totals.protein += m.protein;
+        totals.carbs   += m.carbs;
+        totals.fibre   += m.fibre;
+      }
+      return totals;
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // DOM REFERENCES
+    // ──────────────────────────────────────────────────────────────────
+    const ringFillEl          = document.getElementById('ring-fill-el');
+    const ringLabelConsumed   = document.getElementById('ring-label-consumed');
+    const ringLabelGoal       = document.getElementById('ring-label-goal');
+    const macroProteinConsumed = document.getElementById('macro-protein-consumed');
+    const macroCarbsConsumed  = document.getElementById('macro-carbs-consumed');
+    const macroFibreConsumed  = document.getElementById('macro-fibre-consumed');
+    const barProtein          = document.getElementById('bar-protein');
+    const barCarbs            = document.getElementById('bar-carbs');
+    const barFibre            = document.getElementById('bar-fibre');
+    const goalPctLabel        = document.getElementById('goal-pct-label');
+    const mealsContainer      = document.getElementById('meals-container');
+    const skeletonPlaceholder = document.getElementById('skeleton-placeholder');
+    const clearBtn            = document.getElementById('clear-btn');
+    const fileInput           = document.getElementById('file-input');
+    const uploadLabel         = document.getElementById('upload-label');
+    const scanBtn             = document.getElementById('scan-btn');
+    const aiChefBtn           = document.getElementById('ai-chef-btn');
+    const toast               = document.getElementById('toast');
+
+    // ──────────────────────────────────────────────────────────────────
+    // RENDER FUNCTIONS
+    // ──────────────────────────────────────────────────────────────────
+
+    /**
+     * Update the calorie ring, macro bars, and goal pill
+     * based on current totals.
+     */
+    function updateStats(totals) {
+      // ── Calorie ring ──
+      const circumference = 2 * Math.PI * 64; // r = 64  →  ≈ 402.1
+      const ratio = Math.min(totals.kcal / GOALS.kcal, 1);
+      const offset = circumference * (1 - ratio);
+      ringFillEl.setAttribute('stroke-dasharray', circumference.toFixed(1));
+      ringFillEl.setAttribute('stroke-dashoffset', offset.toFixed(1));
+
+      // Change ring color to red if over goal
+      ringFillEl.style.stroke = totals.kcal > GOALS.kcal ? '#EF4444' : '#0F172A';
+
+      ringLabelConsumed.textContent = totals.kcal;
+      ringLabelGoal.textContent     = GOALS.kcal;
+
+      // ── Macro text ──
+      macroProteinConsumed.textContent = totals.protein;
+      macroCarbsConsumed.textContent   = totals.carbs;
+      macroFibreConsumed.textContent   = totals.fibre;
+
+      // ── Macro progress bars ──
+      barProtein.style.width = `${Math.min(100, (totals.protein / GOALS.protein) * 100)}%`;
+      barCarbs.style.width   = `${Math.min(100, (totals.carbs   / GOALS.carbs)   * 100)}%`;
+      barFibre.style.width   = `${Math.min(100, (totals.fibre   / GOALS.fibre)   * 100)}%`;
+
+      // ── Daily goal percentage pill + mini bar ──
+      const pct = Math.min(100, Math.round((totals.kcal / GOALS.kcal) * 100));
+      goalPctLabel.textContent = `${pct}%`;
+      document.getElementById('goal-bar').style.width = `${pct}%`;
+    }
+
+    /**
+     * Format the current time as "8:42 AM"
+     */
+    function formatTime(isoString) {
+      const d = isoString ? new Date(isoString) : new Date();
+      return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    }
+
+    /**
+     * Rebuild the Recent Meals list from stored data.
+     */
+    // Max meals visible before "Show more" appears
+    const MEALS_VISIBLE_DEFAULT = 4;
+    let mealsExpanded = false;
+
+    function renderMeals(meals) {
+      // Remove any previously rendered meal items (but keep skeleton as reference)
+      mealsContainer.querySelectorAll('.meal-item, #show-more-row').forEach(el => el.remove());
+
+      if (meals.length === 0) {
+        // Show skeleton placeholders
+        skeletonPlaceholder.classList.remove('hidden');
+        clearBtn.classList.add('hidden');
+        mealsExpanded = false;
+        return;
+      }
+
+      // Hide skeletons, show real meals
+      skeletonPlaceholder.classList.add('hidden');
+      clearBtn.classList.remove('hidden');
+
+      // Most-recent first
+      const reversed = [...meals].reverse();
+      const limit     = mealsExpanded ? reversed.length : MEALS_VISIBLE_DEFAULT;
+      const visible   = reversed.slice(0, limit);
+      const overflow  = reversed.length - limit;
+
+      visible.forEach((meal, idx) => {
+        const item = document.createElement('div');
+        item.className = 'meal-item flex items-start gap-3 py-3 border-b border-slate-100 last:border-0';
+        item.style.animationDelay = `${idx * 60}ms`;
+
+        item.innerHTML = `
+          <div class="mt-1 flex-shrink-0 w-2.5 h-2.5 rounded-full bg-brand ring-2 ring-emerald-100"></div>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-sm text-charcoal truncate">${escapeHtml(meal.name)}</p>
+            <p class="text-xs text-muted mt-0.5">
+              ${meal.kcal} kcal &nbsp;·&nbsp;
+              P ${meal.protein}g &nbsp;·&nbsp;
+              C ${meal.carbs}g &nbsp;·&nbsp;
+              F ${meal.fibre}g
+            </p>
+          </div>
+          <span class="flex-shrink-0 text-xs text-muted whitespace-nowrap mt-0.5">
+            ${formatTime(meal.loggedAt)}
+          </span>
+        `;
+        mealsContainer.appendChild(item);
+      });
+
+      // "Show more / Show less" toggle row — only when there's overflow or expanded
+      if (reversed.length > MEALS_VISIBLE_DEFAULT) {
+        const row = document.createElement('div');
+        row.id = 'show-more-row';
+        row.className = 'pt-3 flex items-center justify-between';
+
+        if (!mealsExpanded) {
+          row.innerHTML = `
+            <span class="text-xs text-muted">${overflow} more meal${overflow !== 1 ? 's' : ''} today</span>
+            <button id="show-more-btn"
+              class="text-xs font-semibold text-brand border border-brand rounded-lg px-3 py-1
+                     hover:bg-emerald-50 transition-colors duration-150">
+              Show all ${reversed.length}
+            </button>
+          `;
+        } else {
+          row.innerHTML = `
+            <span class="text-xs text-muted">${reversed.length} meals logged</span>
+            <button id="show-more-btn"
+              class="text-xs font-semibold text-muted border border-slate-200 rounded-lg px-3 py-1
+                     hover:bg-slate-50 transition-colors duration-150">
+              Show less
+            </button>
+          `;
+        }
+
+        mealsContainer.appendChild(row);
+
+        document.getElementById('show-more-btn').addEventListener('click', () => {
+          mealsExpanded = !mealsExpanded;
+          renderMeals(meals);
+        });
+      }
+    }
+
+    /** Tiny XSS guard for user-supplied strings */
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // FULL RE-RENDER  (called on load & after every state change)
+    // ──────────────────────────────────────────────────────────────────
+    function refresh() {
+      const meals  = loadMeals();
+      const totals = computeTotals(meals);
+      updateStats(totals);
+      renderMeals(meals);
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // ONBOARDING — BMR / TDEE / macro calculation
+    // ──────────────────────────────────────────────────────────────────
+    const ACTIVITY_LABELS = {
+      '1.2':   'Sedentary',
+      '1.375': 'Lightly Active',
+      '1.55':  'Moderately Active',
+      '1.725': 'Very Active',
+    };
+
+    const onboardingOverlay = document.getElementById('onboarding-overlay');
+    const onboardingForm    = document.getElementById('onboarding-form');
+    const onboardingError   = document.getElementById('onboarding-error');
+
+    function calculateTargets({ gender, age, weight, height, activityFactor }) {
+      // 1. BMR — Mifflin-St Jeor Equation
+      const bmr = gender === 'male'
+        ? (10 * weight) + (6.25 * height) - (5 * age) + 5
+        : (10 * weight) + (6.25 * height) - (5 * age) - 161;
+
+      // 2. TDEE — BMR × activity factor
+      const tdee = bmr * activityFactor;
+
+      // 3. Macro targets
+      const targetProtein = weight * 1.8;                  // g
+      const targetFiber   = (tdee / 1000) * 14;             // g
+      const targetCarbs   = (tdee * 0.5) / 4;               // g (50% of kcal ÷ 4 kcal/g)
+
+      return {
+        targetKcal:    Math.round(tdee),
+        targetProtein: Math.round(targetProtein),
+        targetCarbs:   Math.round(targetCarbs),
+        targetFiber:   Math.round(targetFiber),
+      };
+    }
+
+    function closeOnboardingModal() {
+      onboardingOverlay.style.transition = 'opacity 0.25s ease';
+      onboardingOverlay.style.opacity = '0';
+      setTimeout(() => {
+        onboardingOverlay.classList.add('hidden');
+        onboardingOverlay.style.opacity = '';
+        onboardingOverlay.style.transition = '';
+        document.body.classList.remove('overflow-hidden');
+      }, 250);
+    }
+
+    onboardingForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const gender   = onboardingForm.querySelector('input[name="onb-gender"]:checked')?.value || 'male';
+      const age      = parseFloat(document.getElementById('onb-age').value);
+      const weight   = parseFloat(document.getElementById('onb-weight').value);
+      const height   = parseFloat(document.getElementById('onb-height').value);
+      const activityFactor = parseFloat(document.getElementById('onb-activity').value);
+
+      if (!age || !weight || !height || age <= 0 || weight <= 0 || height <= 0) {
+        onboardingError.textContent = 'Please fill in age, weight, and height with valid numbers.';
+        onboardingError.classList.remove('hidden');
+        return;
+      }
+      onboardingError.classList.add('hidden');
+
+      const targets = calculateTargets({ gender, age, weight, height, activityFactor });
+
+      // 4. Save profile + calculated targets to localStorage
+      saveProfile({
+        gender, age, weight, height,
+        activity: ACTIVITY_LABELS[String(activityFactor)] || 'Moderately Active',
+        ...targets,
+      });
+
+      // Apply the new targets to the live dashboard immediately
+      GOALS.kcal    = targets.targetKcal;
+      GOALS.protein = targets.targetProtein;
+      GOALS.carbs   = targets.targetCarbs;
+      GOALS.fibre   = targets.targetFiber;
+      syncGoalLabels();
+      refresh();
+
+      closeOnboardingModal();
+      showToast('🎯 Your daily goals are set!');
+    });
+
+    // ──────────────────────────────────────────────────────────────────
+    // TOAST HELPER
+    // ──────────────────────────────────────────────────────────────────
+    let toastTimer = null;
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.remove('hidden');
+      // Small rAF to allow transition to fire
+      requestAnimationFrame(() => toast.classList.add('visible'));
+
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('visible');
+        setTimeout(() => toast.classList.add('hidden'), 300);
+      }, 2400);
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // EVENT LISTENERS
+    // ──────────────────────────────────────────────────────────────────
+
+    // ── Groq API key (vision model) ──────────────────────────────────────────
+    // ⚠️  Replace with a fresh key — never commit keys to source control.
+    // ── API key — loaded from sessionStorage so it's never hard-coded ─────────
+    // On first use the user is prompted once; it stays for the browser session.
+    const GROQ_KEY_STORE = 'nutriglance_groq_key';
+    function getApiKey() {
+      let key = sessionStorage.getItem(GROQ_KEY_STORE);
+      if (!key) {
+        key = prompt(
+          'Enter your Groq API key to enable AI meal analysis:\n' +
+          '(Get one free at console.groq.com — stored only in this browser session)'
+        );
+        if (key) sessionStorage.setItem(GROQ_KEY_STORE, key.trim());
+      }
+      return key ? key.trim() : null;
+    }
+    // Use getApiKey() at call time, not at startup
+    const GROQ_API_KEY = null; // resolved lazily via getApiKey()
+    const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
+
+    // ── Upload zone UI state helpers ─────────────────────────────────────────
+    const uploadZone      = document.getElementById('upload-zone');
+    const uploadAnalysing = document.getElementById('upload-analysing');
+    const uploadResult    = document.getElementById('upload-result');
+
+    function showUploadState(state) { // 'idle' | 'analysing' | 'result'
+      uploadZone.classList.toggle     ('hidden', state !== 'idle');
+      uploadZone.classList.toggle     ('flex',   state === 'idle');
+      uploadAnalysing.classList.toggle('hidden', state !== 'analysing');
+      uploadAnalysing.classList.toggle('flex',   state === 'analysing');
+      uploadResult.classList.toggle   ('hidden', state !== 'result');
+      uploadResult.classList.toggle   ('flex',   state === 'result');
+    }
+
+    // ── AI nutrition analysis via Groq vision ────────────────────────────────
+    async function analyseWithAI(base64Image, mimeType) {
+      const prompt = `You are a professional nutritionist. Analyse this meal photo and return ONLY a JSON object — no markdown, no explanation. Use this exact schema:
+{
+  "name": "short meal name (e.g. Grilled Chicken & Rice)",
+  "description": "one sentence describing the meal",
+  "kcal": 420,
+  "protein": 38,
+  "carbs": 45,
+  "fibre": 4
+}
+Estimate realistic values for a typical single serving. All numbers must be integers.`;
+
+      const response = await fetch(GROQ_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getApiKey()}`,
+        },
+        body: JSON.stringify({
+          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+          max_tokens: 200,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` } },
+              { type: 'text', text: prompt },
+            ],
+          }],
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err?.error?.message || `API error ${response.status}`);
+      }
+
+      const data = await response.json();
+      const raw  = data.choices?.[0]?.message?.content ?? '';
+      // Strip any accidental markdown fences
+      const clean = raw.replace(/```json|```/gi, '').trim();
+      return JSON.parse(clean);
+    }
+
+    // ── Pending result — held until user clicks "Log this meal" ─────────────
+    let pendingMeal = null;
+
+    // ── 1. Upload zone — click triggers file picker ──────────────────────────
+    uploadZone.addEventListener('click', () => fileInput.click());
+    uploadZone.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+    });
+
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      fileInput.value = ''; // reset so same file can be re-picked
+
+      // Convert to base64
+      const base64 = await new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onload  = () => res(reader.result.split(',')[1]);
+        reader.onerror = rej;
+        reader.readAsDataURL(file);
+      });
+
+      const previewURL = URL.createObjectURL(file);
+
+      // Show analysing state with thumbnail
+      document.getElementById('upload-preview').src = previewURL;
+      showUploadState('analysing');
+
+      try {
+        const meal = await analyseWithAI(base64, file.type || 'image/jpeg');
+
+        // Populate result card
+        document.getElementById('result-thumb').src  = previewURL;
+        document.getElementById('result-name').textContent = meal.name;
+        document.getElementById('result-desc').textContent = meal.description ?? '';
+
+        const pillsEl = document.getElementById('result-pills');
+        pillsEl.innerHTML = '';
+        const pillData = [
+          { label: `${meal.kcal} kcal`, color: 'bg-charcoal/10 text-charcoal' },
+          { label: `P ${meal.protein}g`, color: 'bg-emerald-100 text-emerald-700' },
+          { label: `C ${meal.carbs}g`,   color: 'bg-blue-100 text-blue-700'    },
+          { label: `F ${meal.fibre}g`,   color: 'bg-orange-100 text-orange-700' },
+        ];
+        pillData.forEach(({ label, color }) => {
+          const span = document.createElement('span');
+          span.className = `text-xs font-semibold px-2 py-0.5 rounded-full ${color}`;
+          span.textContent = label;
+          pillsEl.appendChild(span);
+        });
+
+        pendingMeal = { ...meal, loggedAt: new Date().toISOString() };
+        showUploadState('result');
+
+      } catch (err) {
+        showUploadState('idle');
+        showToast(`⚠️ Analysis failed: ${err.message}`);
+        console.error('Groq error:', err);
+      }
+    });
+
+    // Log button — commit pendingMeal to storage
+    document.getElementById('result-log-btn').addEventListener('click', () => {
+      if (!pendingMeal) return;
+      const meals = loadMeals();
+      meals.push(pendingMeal);
+      saveMeals(meals);
+      refresh();
+      showToast(`✅ Logged: ${pendingMeal.name} (${pendingMeal.kcal} kcal)`);
+      pendingMeal = null;
+      showUploadState('idle');
+    });
+
+    // Retry — go back to idle
+    document.getElementById('result-retry-btn').addEventListener('click', () => {
+      pendingMeal = null;
+      showUploadState('idle');
+    });
+
+
+    // 2. Scan a Meal — randomly pick food, log it
+    scanBtn.addEventListener('click', () => {
+      const food  = FOOD_DB[Math.floor(Math.random() * FOOD_DB.length)];
+      const meals = loadMeals();
+
+      meals.push({
+        ...food,
+        loggedAt: new Date().toISOString(),
+      });
+
+      saveMeals(meals);
+      refresh();
+      showToast(`✅ Logged: ${food.name} (${food.kcal} kcal)`);
+    });
+
+
+    // 3. Clear all meals
+    clearBtn.addEventListener('click', () => {
+      if (!confirm('Clear all of today\'s logged meals?')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      refresh();
+      showToast('Meal history cleared.');
+    });
+
+
+    // 4. AI Chef — now links directly to aichef.html (see card markup above)
+
+
+    // ──────────────────────────────────────────────────────────────────
+    // HYDRATION TRACKER
+    // ──────────────────────────────────────────────────────────────────
+    const WATER_KEY = 'nutriglance_water';
+
+    function loadWater() {
+      try {
+        const raw = localStorage.getItem(WATER_KEY);
+        const data = raw ? JSON.parse(raw) : { count: 0, date: '' };
+        // Reset if it's a new day
+        const today = new Date().toDateString();
+        if (data.date !== today) return { count: 0, date: today };
+        return data;
+      } catch { return { count: 0, date: new Date().toDateString() }; }
+    }
+
+    function saveWater(count) {
+      localStorage.setItem(WATER_KEY, JSON.stringify({
+        count,
+        date: new Date().toDateString(),
+      }));
+    }
+
+    function renderWater() {
+      const { count } = loadWater();
+      const container = document.getElementById('water-drops');
+      const label     = document.getElementById('water-count');
+      label.textContent = count;
+      container.innerHTML = '';
+
+      for (let i = 0; i < 8; i++) {
+        const btn = document.createElement('button');
+        const filled = i < count;
+        btn.setAttribute('aria-label', `Glass ${i + 1}${filled ? ' (logged)' : ''}`);
+        btn.className = `w-7 h-7 rounded-full border-2 text-sm transition-all duration-200 ${
+          filled
+            ? 'bg-brand border-brand text-white'
+            : 'bg-white border-slate-200 text-muted hover:border-brand'
+        }`;
+        btn.textContent = '💧';
+        btn.style.fontSize = '13px';
+        btn.addEventListener('click', () => {
+          // Clicking a filled drop un-logs it; clicking empty logs up to that drop
+          const newCount = filled ? i : i + 1;
+          saveWater(newCount);
+          renderWater();
+          showToast(newCount >= 8 ? '🎉 Hydration goal met!' : `${newCount}/8 glasses logged`);
+        });
+        container.appendChild(btn);
+      }
+    }
+
+    document.getElementById('water-reset').addEventListener('click', () => {
+      saveWater(0);
+      renderWater();
+    });
+
+    // ──────────────────────────────────────────────────────────────────
+    // TIP OF THE DAY (rotates daily)
+    // ──────────────────────────────────────────────────────────────────
+    const TIPS = [
+      'Eating slowly helps your brain register fullness — aim for 20 minutes per meal.',
+      'Protein at breakfast reduces cravings by up to 60% throughout the day.',
+      'Fibre feeds your gut microbiome. Aim for 25–35g daily from whole foods.',
+      'Colour your plate — each colour represents different phytonutrients.',
+      'Staying hydrated can prevent mistaking thirst for hunger.',
+      'Prep meals on Sunday to make healthy choices easier all week.',
+      'A handful of nuts between meals provides healthy fats and keeps energy stable.',
+    ];
+
+    function renderTip() {
+      const dayIndex = Math.floor(Date.now() / 86400000) % TIPS.length;
+      document.getElementById('daily-tip').textContent = TIPS[dayIndex];
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // INITIAL RENDER on page load
+    // ──────────────────────────────────────────────────────────────────
+    refresh();
+    renderWater();
+    renderTip();
+
+  </script>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       FOOTER
+  ════════════════════════════════════════════════════════════════ -->
+  <footer class="bg-charcoal text-white mt-12">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+
+      <!-- Top row: brand + nav columns -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-8 pb-8 border-b border-white/10">
+
+        <!-- Brand col -->
+        <div class="col-span-2 sm:col-span-1">
+          <span class="font-display text-lg font-extrabold">
+            <span class="text-brand">Nutri</span><span class="text-white">Glance</span>
+          </span>
+          <p class="text-xs text-white/50 mt-2 leading-relaxed">
+            Your personal AI dietitian.<br/>
+            Track meals, macros, and habits — all in one place.
+          </p>
+          <!-- Social icons -->
+          <div class="flex gap-3 mt-4">
+            <a href="#" aria-label="Twitter" class="w-7 h-7 rounded-lg bg-white/10 hover:bg-brand transition-colors flex items-center justify-center">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </a>
+            <a href="#" aria-label="Instagram" class="w-7 h-7 rounded-lg bg-white/10 hover:bg-brand transition-colors flex items-center justify-center">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+            </a>
+            <a href="#" aria-label="GitHub" class="w-7 h-7 rounded-lg bg-white/10 hover:bg-brand transition-colors flex items-center justify-center">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Product links -->
+        <div>
+          <h4 class="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Product</h4>
+          <ul class="flex flex-col gap-2">
+            <li><a href="#" class="footer-link text-sm text-white/70 transition-colors">Dashboard</a></li>
+            <li><a href="#" class="footer-link text-sm text-white/70 transition-colors">Meal Scanner</a></li>
+            <li><a href="aichef.html" class="footer-link text-sm text-white/70 transition-colors">AI Chef</a></li>
+            <li><a href="#" class="footer-link text-sm text-white/70 transition-colors">Progress Tracker</a></li>
+            <li><a href="#" class="footer-link text-sm text-white/70 transition-colors">Integrations</a></li>
+          </ul>
+        </div>
+
+        <!-- Company links -->
+        <div>
+          <h4 class="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Company</h4>
+          <ul class="flex flex-col gap-2">
+            <li><a href="#" class="footer-link text-sm text-white/70 transition-colors">About Us</a></li>
+            <li><a href="#" class="footer-link text-sm text-white/70 transition-colors">Blog</a></li>
+            <li><a href="#" class="footer-link text-sm text-white/70 transition-colors">Careers</a></li>
+            <li><a href="#" class="footer-link text-sm text-white/70 transition-colors">Press Kit</a></li>
+          </ul>
+        </div>
+
+        <!-- Support links -->
+        <div>
+          <h4 class="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Support</h4>
+          <ul class="flex flex-col gap-2">
+            <li><a href="#" class="footer-link text-sm text-white/70 transition-colors">Help Centre</a></li>
+            <li><a href="#" class="footer-link text-sm text-white/70 transition-colors">Privacy Policy</a></li>
+            <li><a href="#" class="footer-link text-sm text-white/70 transition-colors">Terms of Service</a></li>
+            <li><a href="#" class="footer-link text-sm text-white/70 transition-colors">Cookie Policy</a></li>
+          </ul>
+        </div>
+
+      </div><!-- /top row -->
+
+      <!-- Bottom row: copyright + badge -->
+      <div class="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/40">
+        <p>© 2026 NutriGlance. All rights reserved.</p>
+        <div class="flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-brand animate-pulse"></span>
+          <span>All systems operational</span>
+        </div>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       NAVBAR TOGGLE SCRIPT
+  ════════════════════════════════════════════════════════════════ -->
+  <script>
+    const hamburger  = document.getElementById('hamburger');
+    const mobileMenu = document.getElementById('mobile-menu');
+
+    hamburger.addEventListener('click', () => {
+      const isOpen = mobileMenu.classList.toggle('open');
+      hamburger.setAttribute('aria-expanded', isOpen);
+      document.body.classList.toggle('menu-open', isOpen);
+    });
+
+    // Close menu when any mobile nav link is clicked
+    mobileMenu.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        mobileMenu.classList.remove('open');
+        hamburger.setAttribute('aria-expanded', 'false');
+        document.body.classList.remove('menu-open');
+      });
+    });
+
+    // Close menu on outside click
+    document.addEventListener('click', (e) => {
+      if (!hamburger.contains(e.target) && !mobileMenu.contains(e.target)) {
+        mobileMenu.classList.remove('open');
+        hamburger.setAttribute('aria-expanded', 'false');
+        document.body.classList.remove('menu-open');
+      }
+    });
+
+    // Desktop nav: highlight active link on click
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', (e) => {
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+      });
+    });
+  </script>
+
+</body>
+</html>

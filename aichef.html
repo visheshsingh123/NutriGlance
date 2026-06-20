@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Chef – NutriGlance</title>
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Inter for UI clarity, Space Grotesk for bold headings -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@700;800&display=swap" rel="stylesheet" />
+
+  <script>
+    // ─── Tailwind custom config — identical token system to the rest of the site ─
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand:    '#10B981',
+            charcoal: '#0F172A',
+            bg:       '#EFF7F4',
+            card:     '#FFFFFF',
+            muted:    '#94A3B8',
+          },
+          fontFamily: {
+            display: ['"Space Grotesk"', 'sans-serif'],
+            body:    ['"Inter"',         'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; }
+
+    /* ── Navbar collapse (matches the rest of the site) ── */
+    #mobile-menu {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s ease, opacity 0.3s ease;
+      opacity: 0;
+    }
+    #mobile-menu.open { max-height: 400px; opacity: 1; }
+
+    /* ── Active nav link indicator (matches dashboard) ── */
+    .nav-link.active { color: #0F172A; font-weight: 700; }
+    .nav-link.active::after {
+      content: '';
+      display: block;
+      height: 2px;
+      background: #0F172A;
+      border-radius: 2px;
+      margin-top: 2px;
+    }
+
+    /* ── Footer link hover ── */
+    .footer-link:hover { color: #10B981; }
+
+    /* ── Hamburger bar animation ── */
+    .ham-bar { transition: transform 0.25s ease, opacity 0.25s ease; }
+    body.menu-open #ham-top { transform: translateY(6px) rotate(45deg); }
+    body.menu-open #ham-mid { opacity: 0; transform: scaleX(0); }
+    body.menu-open #ham-bot { transform: translateY(-6px) rotate(-45deg); }
+
+    /* ── Message entrance ── */
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .chat-msg { animation: fadeSlideIn 0.25s ease both; }
+
+    /* ── Typing indicator ── */
+    @keyframes typingBounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: .4; }
+      40%           { transform: translateY(-4px); opacity: 1; }
+    }
+    .typing-dot { animation: typingBounce 1.2s infinite ease-in-out; }
+    .typing-dot:nth-child(2) { animation-delay: 0.15s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+    /* ── Chat scroll area ── */
+    #chat-log { scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
+    #chat-log::-webkit-scrollbar { width: 6px; }
+    #chat-log::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 999px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .chat-msg, .typing-dot { animation: none !important; }
+    }
+  </style>
+</head>
+
+<body class="bg-bg min-h-screen font-body text-charcoal flex flex-col">
+
+  <!-- ════════════════════════════════════════════════════════════════
+       NAVBAR — same app navbar used on the dashboard
+  ════════════════════════════════════════════════════════════════ -->
+  <nav class="bg-brand shadow-sm sticky top-0 z-40">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6">
+      <div class="flex items-center justify-between h-14">
+
+        <!-- Logo -->
+        <a href="index.html" class="flex items-center gap-2 flex-shrink-0">
+          <span class="font-display text-xl font-extrabold tracking-tight">
+            <span class="text-charcoal">Nutri</span><span class="text-white">Glance</span>
+          </span>
+          <span class="hidden sm:inline text-charcoal/70 font-medium text-xs">
+            Your personal AI dietitian
+          </span>
+        </a>
+
+        <!-- Desktop nav links -->
+        <div class="hidden md:flex items-center gap-1">
+          <a href="nutriglance.html" class="nav-link px-4 py-1.5 text-sm text-charcoal/70 rounded-lg hover:bg-white/20 hover:text-charcoal transition-colors">Dashboard</a>
+          <a href="nutriglance.html" class="nav-link px-4 py-1.5 text-sm text-charcoal/70 rounded-lg hover:bg-white/20 hover:text-charcoal transition-colors">Meals</a>
+          <a href="nutriglance.html" class="nav-link px-4 py-1.5 text-sm text-charcoal/70 rounded-lg hover:bg-white/20 hover:text-charcoal transition-colors">Progress</a>
+          <a href="aichef.html" class="nav-link active px-4 py-1.5 text-sm text-charcoal/90 rounded-lg hover:bg-white/20 transition-colors">AI Chef</a>
+          <a href="nutriglance.html" class="nav-link px-4 py-1.5 text-sm text-charcoal/70 rounded-lg hover:bg-white/20 hover:text-charcoal transition-colors">Settings</a>
+        </div>
+
+        <!-- Desktop right: avatar -->
+        <div class="hidden md:flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-charcoal/20 flex items-center justify-center text-charcoal font-bold text-sm select-none cursor-pointer hover:bg-charcoal/30 transition-colors" title="Profile">
+            A
+          </div>
+        </div>
+
+        <!-- Hamburger (mobile) -->
+        <button
+          id="hamburger"
+          aria-label="Toggle navigation menu"
+          aria-expanded="false"
+          aria-controls="mobile-menu"
+          class="md:hidden flex flex-col justify-center items-center w-9 h-9 gap-[5px] rounded-lg hover:bg-white/20 transition-colors"
+        >
+          <span id="ham-top" class="ham-bar block w-5 h-0.5 bg-charcoal rounded-full origin-center"></span>
+          <span id="ham-mid" class="ham-bar block w-5 h-0.5 bg-charcoal rounded-full origin-center"></span>
+          <span id="ham-bot" class="ham-bar block w-5 h-0.5 bg-charcoal rounded-full origin-center"></span>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- Mobile collapsible menu -->
+    <div id="mobile-menu" role="navigation" aria-label="Mobile navigation">
+      <div class="max-w-5xl mx-auto px-4 pb-4 flex flex-col gap-1">
+        <a href="nutriglance.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-charcoal/70 hover:bg-white/20 hover:text-charcoal transition-colors">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Dashboard
+        </a>
+        <a href="nutriglance.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-charcoal/70 hover:bg-white/20 hover:text-charcoal transition-colors">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          Meals
+        </a>
+        <a href="nutriglance.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-charcoal/70 hover:bg-white/20 hover:text-charcoal transition-colors">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Progress
+        </a>
+        <a href="aichef.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-charcoal bg-white/25">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>
+          AI Chef
+        </a>
+        <a href="nutriglance.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-charcoal/70 hover:bg-white/20 hover:text-charcoal transition-colors">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+          Settings
+        </a>
+        <div class="border-t border-white/20 mt-1 pt-3 flex items-center gap-3 px-3">
+          <div class="w-8 h-8 rounded-full bg-charcoal/20 flex items-center justify-center text-charcoal font-bold text-sm">A</div>
+          <div>
+            <p class="text-sm font-semibold text-charcoal">Alex</p>
+            <p class="text-xs text-charcoal/60">alex@nutriglance.app</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </nav>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       MAIN — chat interface
+  ════════════════════════════════════════════════════════════════ -->
+  <main class="max-w-2xl w-full mx-auto px-4 py-8 sm:py-10 flex-1 flex flex-col">
+
+    <div class="text-center mb-6">
+      <span class="inline-block text-brand text-xs font-bold uppercase tracking-wider mb-2">AI Chef</span>
+      <h1 class="font-display text-3xl font-extrabold text-charcoal">What's in your kitchen?</h1>
+      <p class="text-sm text-muted mt-2">Tell me the ingredients you have, and I'll suggest what to cook.</p>
+    </div>
+
+    <!-- Chat card -->
+    <div class="bg-card rounded-2xl shadow-sm border border-slate-100 flex flex-col flex-1 min-h-[480px] overflow-hidden">
+
+      <!-- Card header -->
+      <div class="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/>
+              <line x1="6" y1="17" x2="18" y2="17"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-bold text-charcoal leading-tight">AI Chef</p>
+            <p class="text-xs text-muted leading-tight">Usually replies in a few seconds</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <button id="clear-chat-btn" class="text-xs font-semibold text-muted hover:text-charcoal transition-colors">Clear chat</button>
+          <button id="change-key-btn" class="text-xs font-semibold text-muted hover:text-charcoal transition-colors">API key</button>
+        </div>
+      </div>
+
+      <!-- Message log -->
+      <div id="chat-log" class="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-4">
+        <!-- Initial greeting -->
+        <div class="chat-msg flex items-start gap-2.5">
+          <div class="w-7 h-7 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/>
+              <line x1="6" y1="17" x2="18" y2="17"/>
+            </svg>
+          </div>
+          <div class="bg-slate-50 text-charcoal text-sm rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%] leading-relaxed">
+            Hi! I'm AI Chef 👋 Tell me what ingredients you have on hand — like "chicken, rice, broccoli" — and I'll suggest a few recipes you can make right now.
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick suggestion chips -->
+      <div class="px-5 pb-3 flex flex-wrap gap-2">
+        <button class="suggestion-chip text-xs font-semibold text-brand bg-emerald-50 hover:bg-emerald-100 rounded-full px-3 py-1.5 transition-colors">Chicken, rice, broccoli</button>
+        <button class="suggestion-chip text-xs font-semibold text-brand bg-emerald-50 hover:bg-emerald-100 rounded-full px-3 py-1.5 transition-colors">Eggs, spinach, cheese</button>
+        <button class="suggestion-chip text-xs font-semibold text-brand bg-emerald-50 hover:bg-emerald-100 rounded-full px-3 py-1.5 transition-colors">Pasta, tomatoes, basil</button>
+      </div>
+
+      <!-- Input row -->
+      <form id="chat-form" class="flex items-center gap-2 border-t border-slate-100 px-4 py-3">
+        <input
+          id="chat-input"
+          type="text"
+          autocomplete="off"
+          placeholder="e.g. chicken, spinach, garlic, lemon…"
+          class="flex-1 text-sm bg-slate-50 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand placeholder:text-slate-400"
+        />
+        <button
+          id="send-btn"
+          type="submit"
+          aria-label="Send message"
+          class="bg-brand text-white rounded-xl w-10 h-10 flex items-center justify-center flex-shrink-0
+                 hover:bg-emerald-600 active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:pointer-events-none"
+        >
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </form>
+
+    </div>
+
+    <p class="text-xs text-muted text-center mt-3">
+      AI Chef can make mistakes. Always use your own judgement with food safety and allergies.
+    </p>
+  </main>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       FOOTER — same structure and copy as the rest of the site
+  ════════════════════════════════════════════════════════════════ -->
+  <footer class="bg-charcoal text-white mt-12">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-8 pb-8 border-b border-white/10">
+
+        <div class="col-span-2 sm:col-span-1">
+          <span class="font-display text-lg font-extrabold">
+            <span class="text-brand">Nutri</span><span class="text-white">Glance</span>
+          </span>
+          <p class="text-xs text-white/50 mt-2 leading-relaxed">
+            Your personal AI dietitian.<br/>
+            Track meals, macros, and habits — all in one place.
+          </p>
+          <div class="flex gap-3 mt-4">
+            <a href="#" aria-label="Twitter" class="w-7 h-7 rounded-lg bg-white/10 hover:bg-brand transition-colors flex items-center justify-center">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </a>
+            <a href="#" aria-label="Instagram" class="w-7 h-7 rounded-lg bg-white/10 hover:bg-brand transition-colors flex items-center justify-center">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+            </a>
+            <a href="#" aria-label="GitHub" class="w-7 h-7 rounded-lg bg-white/10 hover:bg-brand transition-colors flex items-center justify-center">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Product</h4>
+          <ul class="flex flex-col gap-2">
+            <li><a href="nutriglance.html" class="footer-link text-sm text-white/70 transition-colors">Dashboard</a></li>
+            <li><a href="nutriglance.html" class="footer-link text-sm text-white/70 transition-colors">Meal Scanner</a></li>
+            <li><a href="aichef.html" class="footer-link text-sm text-white/70 transition-colors">AI Chef</a></li>
+            <li><a href="nutriglance.html" class="footer-link text-sm text-white/70 transition-colors">Progress Tracker</a></li>
+            <li><a href="#" class="footer-link text-sm text-white/70 transition-colors">Integrations</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Company</h4>
+          <ul class="flex flex-col gap-2">
+            <li><a href="#" class="footer-link text-sm text-white/70 transition-colors">About Us</a></li>
+            <li><a href="#" class="footer-link text-sm text-white/70 transition-colors">Blog</a></li>
+            <li><a href="#" class="footer-link text-sm text-white/70 transition-colors">Careers</a></li>
+            <li><a href="#" class="footer-link text-sm text-white/70 transition-colors">Press Kit</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Support</h4>
+          <ul class="flex flex-col gap-2">
+            <li><a href="#" class="footer-link text-sm text-white/70 transition-colors">Help Centre</a></li>
+            <li><a href="#" class="footer-link text-sm text-white/70 transition-colors">Privacy Policy</a></li>
+            <li><a href="#" class="footer-link text-sm text-white/70 transition-colors">Terms of Service</a></li>
+            <li><a href="#" class="footer-link text-sm text-white/70 transition-colors">Cookie Policy</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/40">
+        <p>© 2026 NutriGlance. All rights reserved.</p>
+        <div class="flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-brand animate-pulse"></span>
+          <span>All systems operational</span>
+        </div>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       NAVBAR TOGGLE SCRIPT
+  ════════════════════════════════════════════════════════════════ -->
+  <script>
+    const hamburger  = document.getElementById('hamburger');
+    const mobileMenu = document.getElementById('mobile-menu');
+
+    hamburger.addEventListener('click', () => {
+      const isOpen = mobileMenu.classList.toggle('open');
+      hamburger.setAttribute('aria-expanded', isOpen);
+      document.body.classList.toggle('menu-open', isOpen);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!hamburger.contains(e.target) && !mobileMenu.contains(e.target)) {
+        mobileMenu.classList.remove('open');
+        hamburger.setAttribute('aria-expanded', 'false');
+        document.body.classList.remove('menu-open');
+      }
+    });
+  </script>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       AI CHEF — chat logic
+  ════════════════════════════════════════════════════════════════ -->
+  <script>
+    // ── Groq API key — same sessionStorage flow used on the dashboard ────────
+    // The key is never hard-coded; it's requested once via prompt() and kept
+    // only in sessionStorage under the same key name nutriglance.html uses,
+    // so a key entered there is reused here within the same browser session.
+    const GROQ_KEY_STORE = 'nutriglance_groq_key';
+    function getApiKey() {
+      let key = sessionStorage.getItem(GROQ_KEY_STORE);
+      if (!key) {
+        key = prompt(
+          'Enter your Groq API key to enable AI Chef:\n' +
+          '(Get one free at console.groq.com — stored only in this browser session)'
+        );
+        if (key) sessionStorage.setItem(GROQ_KEY_STORE, key.trim());
+      }
+      return key ? key.trim() : null;
+    }
+    const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
+    const GROQ_MODEL    = 'meta-llama/llama-4-scout-17b-16e-instruct';
+
+    const SYSTEM_PROMPT = `You are "AI Chef", a friendly, practical cooking assistant built into the NutriGlance app. The user will tell you which ingredients they currently have. Suggest 1 to 3 realistic recipes they could cook using mostly those ingredients (you may assume basic pantry staples like salt, pepper, cooking oil, and water are available). For each recipe give: a short title, an estimated calories per serving, and a brief numbered method in 3 to 6 steps. If the ingredients are unusual or insufficient for a full recipe, say so honestly and suggest the smallest addition that would make a meal possible. Keep your tone warm, encouraging, and concise. Reply in plain text with a blank line between recipes — do not use markdown asterisks, hashes, or bullet symbols.`;
+
+    // ── DOM references ────────────────────────────────────────────────────
+    const chatLog    = document.getElementById('chat-log');
+    const chatForm    = document.getElementById('chat-form');
+    const chatInput   = document.getElementById('chat-input');
+    const sendBtn     = document.getElementById('send-btn');
+    const clearBtn    = document.getElementById('clear-chat-btn');
+    const changeKeyBtn = document.getElementById('change-key-btn');
+
+    // Running conversation sent to the API (system prompt is added at call time)
+    let history = [];
+
+    function scrollToBottom() {
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    function addMessage(role, text) {
+      const wrapper = document.createElement('div');
+      wrapper.className = `chat-msg flex items-start gap-2.5 ${role === 'user' ? 'justify-end' : ''}`;
+
+      if (role === 'assistant') {
+        wrapper.innerHTML = `
+          <div class="w-7 h-7 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/>
+              <line x1="6" y1="17" x2="18" y2="17"/>
+            </svg>
+          </div>
+          <div class="bg-slate-50 text-charcoal text-sm rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%] leading-relaxed whitespace-pre-line"></div>`;
+        wrapper.querySelector('div:last-child').textContent = text;
+      } else {
+        wrapper.innerHTML = `
+          <div class="bg-brand text-white text-sm rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%] leading-relaxed whitespace-pre-line"></div>`;
+        wrapper.querySelector('div').textContent = text;
+      }
+
+      chatLog.appendChild(wrapper);
+      scrollToBottom();
+      return wrapper;
+    }
+
+    function addTypingIndicator() {
+      const wrapper = document.createElement('div');
+      wrapper.id = 'typing-indicator';
+      wrapper.className = 'chat-msg flex items-start gap-2.5';
+      wrapper.innerHTML = `
+        <div class="w-7 h-7 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/>
+            <line x1="6" y1="17" x2="18" y2="17"/>
+          </svg>
+        </div>
+        <div class="bg-slate-50 rounded-2xl rounded-tl-sm px-4 py-3 flex gap-1 items-center">
+          <span class="typing-dot w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+          <span class="typing-dot w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+          <span class="typing-dot w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+        </div>`;
+      chatLog.appendChild(wrapper);
+      scrollToBottom();
+    }
+
+    function removeTypingIndicator() {
+      document.getElementById('typing-indicator')?.remove();
+    }
+
+    // ── Call Groq chat completions ────────────────────────────────────────
+    async function askAIChef(userText) {
+      const apiKey = getApiKey();
+      if (!apiKey) {
+        throw new Error('No API key provided — click "API key" above to add one.');
+      }
+
+      const response = await fetch(GROQ_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: GROQ_MODEL,
+          max_tokens: 500,
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            ...history,
+            { role: 'user', content: userText },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err?.error?.message || `API error ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content?.trim() || "I couldn't think of anything that time — try rephrasing your ingredients?";
+    }
+
+    // ── Send flow ────────────────────────────────────────────────────────
+    async function sendMessage(text) {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+
+      addMessage('user', trimmed);
+      chatInput.value = '';
+      sendBtn.disabled = true;
+      addTypingIndicator();
+
+      try {
+        const reply = await askAIChef(trimmed);
+        removeTypingIndicator();
+        addMessage('assistant', reply);
+        history.push({ role: 'user', content: trimmed });
+        history.push({ role: 'assistant', content: reply });
+      } catch (err) {
+        removeTypingIndicator();
+        addMessage('assistant', `Sorry, I ran into a problem: ${err.message}`);
+      } finally {
+        sendBtn.disabled = false;
+        chatInput.focus();
+      }
+    }
+
+    chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      sendMessage(chatInput.value);
+    });
+
+    document.querySelectorAll('.suggestion-chip').forEach(chip => {
+      chip.addEventListener('click', () => sendMessage(chip.textContent));
+    });
+
+    clearBtn.addEventListener('click', () => {
+      history = [];
+      chatLog.querySelectorAll('.chat-msg').forEach((el, i) => { if (i > 0) el.remove(); });
+    });
+
+    changeKeyBtn.addEventListener('click', () => {
+      sessionStorage.removeItem(GROQ_KEY_STORE);
+      const key = getApiKey();
+      if (key) addMessage('assistant', 'Got it — API key updated for this session.');
+    });
+  </script>
+
+</body>
+</html>
