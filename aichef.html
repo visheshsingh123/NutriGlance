@@ -369,7 +369,7 @@
     //    (Cloudflare Worker) attaches the real Groq key on the server.
     //    Replace this with your deployed Worker URL.
     const PROXY_ENDPOINT = 'https://groq-proxy.visheshsingh123.workers.dev';
-    const GROQ_MODEL      = 'meta-llama/llama-4-scout-17b-16e-instruct';
+    const GROQ_MODEL      = 'openai/gpt-oss-120b';
 
     const SYSTEM_PROMPT = `You are "AI Chef", a friendly, practical cooking assistant built into the NutriGlance app. The user will tell you which ingredients they currently have. Suggest 1 to 3 realistic recipes they could cook using mostly those ingredients (you may assume basic pantry staples like salt, pepper, cooking oil, and water are available). For each recipe give: a short title, an estimated calories per serving, and a brief numbered method in 3 to 6 steps. If the ingredients are unusual or insufficient for a full recipe, say so honestly and suggest the smallest addition that would make a meal possible. Keep your tone warm, encouraging, and concise. Reply in plain text with a blank line between recipes — do not use markdown asterisks, hashes, or bullet symbols.`;
 
