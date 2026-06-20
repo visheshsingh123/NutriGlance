@@ -1089,7 +1089,7 @@ Estimate realistic values for a typical single serving. All numbers must be inte
 
       if (!response.ok) {
         const rawErr = await response.text();
-        console.error('RAW ERROR BODY:', rawErr);
+        alert('RAW ERROR BODY:\n\n' + rawErr);
         let err = {};
         try { err = JSON.parse(rawErr); } catch {}
         throw new Error(err?.error?.message || `API error ${response.status}`);
