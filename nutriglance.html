@@ -1036,11 +1036,22 @@
     // EVENT LISTENERS
     // ──────────────────────────────────────────────────────────────────
 
-    // ── Calls go through a server-side proxy, so no API key lives in the
-    //    browser at all. Visitors never see or enter a key — the proxy
-    //    (Cloudflare Worker) attaches the real Groq key on the server.
-    //    Replace this with your deployed Worker URL (same one used in aichef.html).
-    const PROXY_ENDPOINT = 'https://groq-proxy.visheshsingh123.workers.dev';
+    // ── API key — loaded from localStorage so it's never hard-coded.
+    //    On first use the browser prompts once; after that it's remembered
+    //    on this device/browser indefinitely.
+    const GROQ_KEY_STORE = 'nutriglance_groq_key';
+    function getApiKey() {
+      let key = localStorage.getItem(GROQ_KEY_STORE);
+      if (!key) {
+        key = prompt(
+          'Enter your Groq API key to enable AI meal analysis:\n' +
+          '(Get one free at console.groq.com — stored only in this browser)'
+        );
+        if (key) localStorage.setItem(GROQ_KEY_STORE, key.trim());
+      }
+      return key ? key.trim() : null;
+    }
+    const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 
     // ── Upload zone UI state helpers ─────────────────────────────────────────
     const uploadZone      = document.getElementById('upload-zone');
@@ -1069,14 +1080,17 @@
 }
 Estimate realistic values for a typical single serving. All numbers must be integers.`;
 
-      const response = await fetch(PROXY_ENDPOINT, {
+      const response = await fetch(GROQ_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getApiKey()}`,
         },
         body: JSON.stringify({
           model: 'qwen/qwen3.6-27b',
-          max_tokens: 200,
+          max_tokens: 600,
+          reasoning_effort: 'none',
+          reasoning_format: 'hidden',
           messages: [{
             role: 'user',
             content: [
@@ -1088,17 +1102,20 @@ Estimate realistic values for a typical single serving. All numbers must be inte
       });
 
       if (!response.ok) {
-        const rawErr = await response.text();
-        alert('RAW ERROR BODY:\n\n' + rawErr);
-        let err = {};
-        try { err = JSON.parse(rawErr); } catch {}
+        const err = await response.json().catch(() => ({}));
         throw new Error(err?.error?.message || `API error ${response.status}`);
       }
 
       const data = await response.json();
       const raw  = data.choices?.[0]?.message?.content ?? '';
-      // Strip any accidental markdown fences
-      const clean = raw.replace(/```json|```/gi, '').trim();
+      // Strip any <think>...</think> reasoning block the model may emit,
+      // then strip any accidental markdown fences, then grab the JSON object.
+      let clean = raw.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+      clean = clean.replace(/```json|```/gi, '').trim();
+      // Some models still leave stray text around the JSON — extract just
+      // the {...} object to be safe.
+      const match = clean.match(/\{[\s\S]*\}/);
+      if (match) clean = match[0];
       return JSON.parse(clean);
     }
 

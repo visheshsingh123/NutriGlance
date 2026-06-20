@@ -210,6 +210,7 @@
         </div>
         <div class="flex items-center gap-3">
           <button id="clear-chat-btn" class="text-xs font-semibold text-muted hover:text-charcoal transition-colors">Clear chat</button>
+          <button id="change-key-btn" class="text-xs font-semibold text-muted hover:text-charcoal transition-colors">API key</button>
         </div>
       </div>
 
@@ -364,12 +365,23 @@
        AI CHEF — chat logic
   ════════════════════════════════════════════════════════════════ -->
   <script>
-    // ── Calls go through a server-side proxy, so no API key lives in the
-    //    browser at all. Visitors never see or enter a key — the proxy
-    //    (Cloudflare Worker) attaches the real Groq key on the server.
-    //    Replace this with your deployed Worker URL.
-    const PROXY_ENDPOINT = 'https://groq-proxy.visheshsingh123.workers.dev';
-    const GROQ_MODEL      = 'openai/gpt-oss-120b';
+    // ── API key — loaded from localStorage so it's never hard-coded.
+    //    On first use the browser prompts once; after that it's remembered
+    //    on this device/browser indefinitely (until cleared via "API key" button).
+    const GROQ_KEY_STORE = 'nutriglance_groq_key';
+    function getApiKey() {
+      let key = localStorage.getItem(GROQ_KEY_STORE);
+      if (!key) {
+        key = prompt(
+          'Enter your Groq API key to enable AI Chef:\n' +
+          '(Get one free at console.groq.com — stored only in this browser)'
+        );
+        if (key) localStorage.setItem(GROQ_KEY_STORE, key.trim());
+      }
+      return key ? key.trim() : null;
+    }
+    const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
+    const GROQ_MODEL    = 'openai/gpt-oss-120b';
 
     const SYSTEM_PROMPT = `You are "AI Chef", a friendly, practical cooking assistant built into the NutriGlance app. The user will tell you which ingredients they currently have. Suggest 1 to 3 realistic recipes they could cook using mostly those ingredients (you may assume basic pantry staples like salt, pepper, cooking oil, and water are available). For each recipe give: a short title, an estimated calories per serving, and a brief numbered method in 3 to 6 steps. If the ingredients are unusual or insufficient for a full recipe, say so honestly and suggest the smallest addition that would make a meal possible. Keep your tone warm, encouraging, and concise. Reply in plain text with a blank line between recipes — do not use markdown asterisks, hashes, or bullet symbols.`;
 
@@ -379,6 +391,7 @@
     const chatInput   = document.getElementById('chat-input');
     const sendBtn     = document.getElementById('send-btn');
     const clearBtn    = document.getElementById('clear-chat-btn');
+    const changeKeyBtn = document.getElementById('change-key-btn');
 
     // Running conversation sent to the API (system prompt is added at call time)
     let history = [];
@@ -436,12 +449,18 @@
       document.getElementById('typing-indicator')?.remove();
     }
 
-    // ── Call AI Chef via the proxy (no key needed in the browser) ──────────
+    // ── Call Groq chat completions ────────────────────────────────────────
     async function askAIChef(userText) {
-      const response = await fetch(PROXY_ENDPOINT, {
+      const apiKey = getApiKey();
+      if (!apiKey) {
+        throw new Error('No API key provided — click "API key" above to add one.');
+      }
+
+      const response = await fetch(GROQ_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
           model: GROQ_MODEL,
@@ -500,6 +519,12 @@
     clearBtn.addEventListener('click', () => {
       history = [];
       chatLog.querySelectorAll('.chat-msg').forEach((el, i) => { if (i > 0) el.remove(); });
+    });
+
+    changeKeyBtn.addEventListener('click', () => {
+      localStorage.removeItem(GROQ_KEY_STORE);
+      const key = getApiKey();
+      if (key) addMessage('assistant', 'Got it — API key updated.');
     });
   </script>
 
