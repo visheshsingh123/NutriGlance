@@ -50,6 +50,11 @@
     body.dark input, body.dark select { background-color: #1E293B !important; color: #E2E8F0 !important; border-color: #334155 !important; }
     body.dark .shadow-sm { box-shadow: 0 1px 4px rgba(0,0,0,0.4) !important; }
     body.dark .bg-emerald-50 { background-color: #064e3b !important; }
+    /* The gender toggle uses peer-checked: variant classes, which are distinct
+       class names from their plain counterparts above and need their own
+       dark-mode override or the selected pill stays light-mode mint/white. */
+    body.dark .peer:checked ~ .peer-checked\:bg-emerald-50 { background-color: #064e3b !important; }
+    body.dark .peer:checked ~ .peer-checked\:text-charcoal { color: #E2E8F0 !important; }
     body.dark .border-white\/20 { border-color: rgba(255,255,255,0.1) !important; }
     body.dark .ring-track { stroke: #334155; }
     body.dark .skeleton { background: linear-gradient(90deg, #1E293B 25%, #334155 50%, #1E293B 75%); }
@@ -517,6 +522,10 @@
               <div class="flex-1 min-w-0">
                 <p class="font-display font-extrabold text-base text-charcoal" id="result-name">—</p>
                 <p class="text-xs text-muted mt-0.5" id="result-desc"></p>
+                <p class="hidden inline-flex text-xs font-semibold text-brand mt-1 items-center gap-1" id="result-portion">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="11"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  <span id="result-portion-text"></span>
+                </p>
                 <!-- Macro pills -->
                 <div class="flex flex-wrap gap-1.5 mt-2" id="result-pills"></div>
               </div>
@@ -1486,16 +1495,25 @@
 
     // ── AI nutrition analysis via Groq vision ────────────────────────────────
     async function analyseWithAI(base64Image, mimeType) {
-      const prompt = `You are a professional nutritionist. Analyse this meal photo and return ONLY a JSON object — no markdown, no explanation. Use this exact schema:
+      const prompt = `You are a professional nutritionist analysing a photo of a meal. Your top priority is counting the QUANTITY OF PIECES of food actually visible in the photo and scaling every nutrition number to match that count — never default to a generic "average serving" size.
+
+Step 1 — Count first. If the food is made of discrete, countable units (dumplings, fries, nuggets, wings, slices of bread/pizza, samosas, eggs, cookies, shrimp, sushi pieces, etc.), visually count them one by one before anything else. Look for items stacked, overlapping, or partially hidden behind others, and include those in your count. State that count explicitly in your portion description (e.g. "6 dumplings" not just "a plate of dumplings"). The piece count is the single strongest signal of portion size — doubling the piece count should roughly double kcal/protein/carbs/fibre.
+
+Step 2 — For foods that aren't made of discrete pieces (rice, curry, soup, smoothies, etc.), judge volume instead: how full the bowl/container is and how large that container appears, using reference objects in frame (cutlery, hands, packaging, drink cans) for real-world scale.
+
+Step 3 — Classify the overall portion as a small snack, a standard single meal, or a large/family-size portion, consistent with the count or volume from Step 1/2.
+
+Return ONLY a JSON object — no markdown, no explanation — using this exact schema:
 {
   "name": "short meal name (e.g. Grilled Chicken & Rice)",
-  "description": "one sentence describing the meal",
+  "description": "one sentence describing the meal and what's visibly on the plate",
+  "portionSize": "short phrase that LEADS with the exact piece count when applicable, plus your weight estimate, e.g. '6 dumplings, ~280g' or '3 slices of pizza, ~330g'; for non-piece foods describe fullness instead, e.g. 'Large bowl, ~450g'",
   "kcal": 420,
   "protein": 38,
   "carbs": 45,
   "fibre": 4
 }
-Estimate realistic values for a typical single serving. All numbers must be integers.`;
+Scale kcal, protein, carbs and fibre to match the piece count or volume you identified — more pieces or a fuller container must produce noticeably higher numbers, fewer pieces or a smaller portion must produce noticeably lower numbers. All numeric nutrition values must be integers.`;
 
       const response = await fetch(GROQ_ENDPOINT, {
         method: 'POST',
@@ -1571,6 +1589,14 @@ Estimate realistic values for a typical single serving. All numbers must be inte
         document.getElementById('result-thumb').src  = previewURL;
         document.getElementById('result-name').textContent = meal.name;
         document.getElementById('result-desc').textContent = meal.description ?? '';
+
+        const portionEl = document.getElementById('result-portion');
+        if (meal.portionSize) {
+          document.getElementById('result-portion-text').textContent = meal.portionSize;
+          portionEl.classList.remove('hidden');
+        } else {
+          portionEl.classList.add('hidden');
+        }
 
         const pillsEl = document.getElementById('result-pills');
         pillsEl.innerHTML = '';

@@ -55,6 +55,11 @@
     body.dark input, body.dark select { background-color: #1E293B !important; color: #E2E8F0 !important; border-color: #334155 !important; }
     body.dark .shadow-sm { box-shadow: 0 1px 4px rgba(0,0,0,0.4) !important; }
     body.dark .bg-emerald-50 { background-color: #064e3b !important; }
+    /* The gender toggle uses peer-checked: variant classes, which are distinct
+       class names from their plain counterparts above and need their own
+       dark-mode override or the selected pill stays light-mode mint/white. */
+    body.dark .peer:checked ~ .peer-checked\:bg-emerald-50 { background-color: #064e3b !important; }
+    body.dark .peer:checked ~ .peer-checked\:text-charcoal { color: #E2E8F0 !important; }
     body.dark .border-white\/20 { border-color: rgba(255,255,255,0.1) !important; }
     body.dark .divide-slate-100 > * + * { border-color: #334155 !important; }
 
