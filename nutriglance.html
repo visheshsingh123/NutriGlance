@@ -1036,25 +1036,11 @@
     // EVENT LISTENERS
     // ──────────────────────────────────────────────────────────────────
 
-    // ── Groq API key (vision model) ──────────────────────────────────────────
-    // ⚠️  Replace with a fresh key — never commit keys to source control.
-    // ── API key — loaded from sessionStorage so it's never hard-coded ─────────
-    // On first use the user is prompted once; it stays for the browser session.
-    const GROQ_KEY_STORE = 'nutriglance_groq_key';
-    function getApiKey() {
-      let key = sessionStorage.getItem(GROQ_KEY_STORE);
-      if (!key) {
-        key = prompt(
-          'Enter your Groq API key to enable AI meal analysis:\n' +
-          '(Get one free at console.groq.com — stored only in this browser session)'
-        );
-        if (key) sessionStorage.setItem(GROQ_KEY_STORE, key.trim());
-      }
-      return key ? key.trim() : null;
-    }
-    // Use getApiKey() at call time, not at startup
-    const GROQ_API_KEY = null; // resolved lazily via getApiKey()
-    const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
+    // ── Calls go through a server-side proxy, so no API key lives in the
+    //    browser at all. Visitors never see or enter a key — the proxy
+    //    (Cloudflare Worker) attaches the real Groq key on the server.
+    //    Replace this with your deployed Worker URL (same one used in aichef.html).
+    const PROXY_ENDPOINT = 'https://groq-proxy.visheshsingh123.workers.dev';
 
     // ── Upload zone UI state helpers ─────────────────────────────────────────
     const uploadZone      = document.getElementById('upload-zone');
@@ -1083,11 +1069,10 @@
 }
 Estimate realistic values for a typical single serving. All numbers must be integers.`;
 
-      const response = await fetch(GROQ_ENDPOINT, {
+      const response = await fetch(PROXY_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getApiKey()}`,
         },
         body: JSON.stringify({
           model: 'meta-llama/llama-4-scout-17b-16e-instruct',
