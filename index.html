@@ -58,6 +58,9 @@
     body.dark .hover\:bg-white\/20:hover { background-color: rgba(0,0,0,0.15) !important; }
     body.dark .hover\:bg-slate-50:hover  { background-color: #334155 !important; }
     body.dark .hover\:bg-emerald-100:hover { background-color: #065f46 !important; }
+    body.dark #bottom-nav { background-color: #1E293B !important; border-color: #334155 !important; }
+    body.dark .bottom-nav-link { color: #94A3B8 !important; }
+    body.dark .bottom-nav-link.active { color: #34D399 !important; }
 
     /* ── Base resets ── */
     *, *::before, *::after { box-sizing: border-box; }
@@ -74,6 +77,32 @@
 
     /* ── Footer link hover (matches dashboard) ── */
     .footer-link:hover { color: #10B981; }
+
+    /* ── Bottom mobile nav ── */
+    #bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 40;
+      background-color: #FFFFFF;
+      border-top: 1px solid #E2E8F0;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .bottom-nav-link {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      flex: 1;
+      padding: 8px 2px 6px;
+      color: #94A3B8;
+      font-size: 10.5px;
+      font-weight: 600;
+      transition: color 0.15s ease;
+    }
+    .bottom-nav-link.active { color: #10B981; }
+    .bottom-nav-link svg { transition: transform 0.15s ease; }
+    .bottom-nav-link:active svg { transform: scale(0.88); }
 
     /* ── Hamburger bar animation (matches dashboard) ── */
     .ham-bar { transition: transform 0.25s ease, opacity 0.25s ease; }
@@ -208,6 +237,32 @@
   </nav>
 
   <!-- ════════════════════════════════════════════════════════════════
+       BOTTOM NAVBAR — mobile only
+  ════════════════════════════════════════════════════════════════ -->
+  <nav id="bottom-nav" class="md:hidden flex items-stretch shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
+    <a href="nutriglance.html" class="bottom-nav-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </a>
+    <a href="nutriglance.html" class="bottom-nav-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      Meals
+    </a>
+    <a href="progress.html" class="bottom-nav-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Progress
+    </a>
+    <a href="aichef.html" class="bottom-nav-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>
+      AI Chef
+    </a>
+    <a href="nutriglance.html" class="bottom-nav-link">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+      Settings
+    </a>
+  </nav>
+
+  <!-- ════════════════════════════════════════════════════════════════
        HERO — the live meal-scan demo is the thesis: this is the one
        interaction NutriGlance is built around.
   ════════════════════════════════════════════════════════════════ -->
@@ -305,7 +360,7 @@
 
   </header>
 
-  <main>
+  <main class="pb-20 md:pb-0">
 
     <!-- ════════════════════════════════════════════════════════════
          HOW IT WORKS — a genuine 3-step sequence, so numbering earns
