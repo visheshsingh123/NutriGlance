@@ -312,7 +312,7 @@
         <!-- Desktop nav links -->
         <div class="hidden md:flex items-center gap-1">
           <a href="nutriglance.html" class="nav-link active px-4 py-1.5 text-sm text-charcoal/90 rounded-lg hover:bg-white/20 transition-colors">Dashboard</a>
-          <a href="meals.html" class="nav-link px-4 py-1.5 text-sm text-charcoal/70 rounded-lg hover:bg-white/20 hover:text-charcoal transition-colors">Meals</a>
+          <a href="nutriglance.html" class="nav-link px-4 py-1.5 text-sm text-charcoal/70 rounded-lg hover:bg-white/20 hover:text-charcoal transition-colors">Meals</a>
           <a href="progress.html" class="nav-link px-4 py-1.5 text-sm text-charcoal/70 rounded-lg hover:bg-white/20 hover:text-charcoal transition-colors">Progress</a>
           <a href="aichef.html" class="nav-link px-4 py-1.5 text-sm text-charcoal/70 rounded-lg hover:bg-white/20 hover:text-charcoal transition-colors">AI Chef</a>
           <button id="settings-nav-btn" class="nav-link px-4 py-1.5 text-sm text-charcoal/70 rounded-lg hover:bg-white/20 hover:text-charcoal transition-colors">Settings</button>
@@ -350,7 +350,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
           Dashboard
         </a>
-        <a href="meals.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-charcoal/70 hover:bg-white/20 hover:text-charcoal transition-colors">
+        <a href="nutriglance.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-charcoal/70 hover:bg-white/20 hover:text-charcoal transition-colors">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
           Meals
         </a>
@@ -391,7 +391,7 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
       Dashboard
     </a>
-    <a href="meals.html" class="bottom-nav-link">
+    <a href="nutriglance.html" class="bottom-nav-link">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
       Meals
     </a>
@@ -1551,7 +1551,13 @@
 
     // ── AI nutrition analysis via Groq vision ────────────────────────────────
     async function analyseWithAI(base64Image, mimeType) {
-      const prompt = `You are a professional nutritionist analysing a photo of a meal. Your top priority is counting the QUANTITY OF PIECES of food actually visible in the photo and scaling every nutrition number to match that count — never default to a generic "average serving" size.
+      const prompt = `You are a professional nutritionist analysing a photo. Your FIRST job is to determine whether the image actually contains food or drink that a human would consume.
+
+STEP 0 — FOOD CHECK (mandatory, do this first):
+Look at the image carefully. Does it contain food, a meal, a drink, or edible items?
+- YES → proceed to Steps 1–3 below.
+- NO (e.g. a person, animal, object, landscape, text, screenshot, blank image, or anything not edible) → return ONLY this JSON and nothing else:
+{"notFood": true, "reason": "one short sentence describing what you actually see, e.g. 'This appears to be a photo of a dog, not food.'"}
 
 Step 1 — Count first. If the food is made of discrete, countable units (dumplings, fries, nuggets, wings, slices of bread/pizza, samosas, eggs, cookies, shrimp, sushi pieces, etc.), visually count them one by one before anything else. Look for items stacked, overlapping, or partially hidden behind others, and include those in your count. State that count explicitly in your portion description (e.g. "6 dumplings" not just "a plate of dumplings"). The piece count is the single strongest signal of portion size — doubling the piece count should roughly double kcal/protein/carbs/fibre.
 
@@ -1640,6 +1646,13 @@ Scale kcal, protein, carbs and fibre to match the piece count or volume you iden
 
       try {
         const meal = await analyseWithAI(base64, file.type || 'image/jpeg');
+
+        // Reject non-food images
+        if (meal.notFood) {
+          showUploadState('idle');
+          showToast(`🚫 ${meal.reason || "That doesn't look like food — please upload a meal photo."}`);
+          return;
+        }
 
         // Populate result card
         document.getElementById('result-thumb').src  = previewURL;
