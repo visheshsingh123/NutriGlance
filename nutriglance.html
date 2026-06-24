@@ -1039,6 +1039,21 @@
     function loadMeals() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
+        const all = raw ? JSON.parse(raw) : [];
+        // Dashboard only shows today's meals; meals.html / progress.html show all history
+        const todayStr = new Date().toDateString();
+        return all.filter(m => {
+          if (!m.loggedAt) return false;
+          return new Date(m.loggedAt).toDateString() === todayStr;
+        });
+      } catch {
+        return [];
+      }
+    }
+
+    function loadAllMeals() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
         return raw ? JSON.parse(raw) : [];
       } catch {
         return [];
@@ -1709,7 +1724,7 @@ Scale kcal, protein, carbs and fibre to match the piece count or volume you iden
     // Log button — commit pendingMeal to storage
     document.getElementById('result-log-btn').addEventListener('click', () => {
       if (!pendingMeal) return;
-      const meals = loadMeals();
+      const meals = loadAllMeals(); // load full history so we don't overwrite past days
       meals.push(pendingMeal);
       saveMeals(meals);
       refresh();
@@ -1729,12 +1744,17 @@ Scale kcal, protein, carbs and fibre to match the piece count or volume you iden
     scanBtn.addEventListener('click', () => cameraInput.click());
 
 
-    // 3. Clear all meals
+    // 3. Clear all meals (today only — history in meals.html is preserved)
     clearBtn.addEventListener('click', () => {
       if (!confirm('Clear all of today\'s logged meals?')) return;
-      localStorage.removeItem(STORAGE_KEY);
+      const todayStr = new Date().toDateString();
+      const remaining = loadAllMeals().filter(m => {
+        if (!m.loggedAt) return true; // keep undated meals
+        return new Date(m.loggedAt).toDateString() !== todayStr;
+      });
+      saveMeals(remaining);
       refresh();
-      showToast('Meal history cleared.');
+      showToast('Today\'s meals cleared.');
     });
 
 
