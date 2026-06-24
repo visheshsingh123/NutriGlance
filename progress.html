@@ -662,9 +662,8 @@ function loadMealsAsProgress() {
     byDate[k].kcal    += m.kcal    || 0;
     byDate[k].protein += m.protein || 0;
     byDate[k].carbs   += m.carbs   || 0;
+    byDate[k].fat     += m.fat     || 0;
     byDate[k].fibre   += m.fibre   || 0;
-    // Note: per-meal fat isn't tracked by the scanner yet, so fat stays 0
-    // for meal-derived days unless a manual entry overrides it.
   }
 
   // Hydration is only ever tracked for "today" on the dashboard (it resets

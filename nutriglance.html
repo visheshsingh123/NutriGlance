@@ -250,18 +250,6 @@
           </div>
         </div>
 
-        <!-- Activity level -->
-        <div>
-          <label for="onb-activity" class="block text-xs font-semibold text-charcoal uppercase tracking-wide mb-1.5">Activity Level</label>
-          <select id="onb-activity" required
-                  class="w-full text-sm bg-slate-50 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand">
-            <option value="1.2">Sedentary — little or no exercise</option>
-            <option value="1.375">Lightly Active — light exercise 1–3 days/wk</option>
-            <option value="1.55" selected>Moderately Active — moderate exercise 3–5 days/wk</option>
-            <option value="1.725">Very Active — hard exercise 6–7 days/wk</option>
-          </select>
-        </div>
-
         <p id="onboarding-error" class="hidden text-xs font-semibold text-red-500 text-center -mb-1"></p>
 
         <button type="submit"
@@ -498,16 +486,16 @@
             </div>
           </div>
 
-          <!-- Fibre -->
+          <!-- Fat -->
           <div>
             <div class="flex justify-between mb-1">
-              <span>Fibre</span>
+              <span>Fat</span>
               <span>
-                <span id="macro-fibre-consumed">0</span>/<span id="macro-fibre-goal">70</span>g
+                <span id="macro-fat-consumed">0</span>/<span id="macro-fat-goal">70</span>g
               </span>
             </div>
             <div class="w-full bg-slate-100 rounded-full h-2">
-              <div id="bar-fibre"
+              <div id="bar-fat"
                    class="h-2 rounded-full bg-teal-300 transition-all duration-500"
                    style="width: 0%"></div>
             </div>
@@ -808,18 +796,6 @@
           </div>
         </div>
 
-        <!-- Activity level -->
-        <div>
-          <label for="prof-activity" class="block text-xs font-semibold text-charcoal uppercase tracking-wide mb-1.5">Activity Level</label>
-          <select id="prof-activity" required
-                  class="w-full text-sm bg-slate-50 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand">
-            <option value="1.2">Sedentary — little or no exercise</option>
-            <option value="1.375">Lightly Active — light exercise 1–3 days/wk</option>
-            <option value="1.55">Moderately Active — moderate exercise 3–5 days/wk</option>
-            <option value="1.725">Very Active — hard exercise 6–7 days/wk</option>
-          </select>
-        </div>
-
         <p id="profile-edit-error" class="hidden text-xs font-semibold text-red-500 text-center -mb-1"></p>
 
         <div class="flex gap-3">
@@ -973,7 +949,7 @@
       kcal:    2100,
       protein: 90,
       carbs:   200,
-      fibre:   70,
+      fat:     70,
     };
 
     // ──────────────────────────────────────────────────────────────────
@@ -1001,14 +977,14 @@
       GOALS.kcal    = savedProfile.targetKcal;
       GOALS.protein = savedProfile.targetProtein;
       GOALS.carbs   = savedProfile.targetCarbs;
-      GOALS.fibre   = savedProfile.targetFiber;
+      GOALS.fat     = savedProfile.targetFat;
     }
 
     // Keeps the "/ 90g" style goal labels in the macro card in sync with GOALS
     function syncGoalLabels() {
       document.getElementById('macro-protein-goal').textContent = GOALS.protein;
       document.getElementById('macro-carbs-goal').textContent   = GOALS.carbs;
-      document.getElementById('macro-fibre-goal').textContent   = GOALS.fibre;
+      document.getElementById('macro-fat-goal').textContent   = GOALS.fat;
       document.getElementById('ring-label-goal').textContent    = GOALS.kcal;
     }
     syncGoalLabels();
@@ -1021,16 +997,16 @@
     // Each scan randomly picks one of these items
     // ──────────────────────────────────────────────────────────────────
     const FOOD_DB = [
-      { name: 'Grilled Chicken & Rice',   kcal: 420, protein: 38, carbs: 45, fibre: 3  },
-      { name: 'Avocado Toast',            kcal: 310, protein: 9,  carbs: 32, fibre: 7  },
-      { name: 'Spinach & Paneer Curry',   kcal: 380, protein: 22, carbs: 28, fibre: 6  },
-      { name: 'Oatmeal with Berries',     kcal: 260, protein: 8,  carbs: 46, fibre: 8  },
-      { name: 'Tuna Salad Wrap',          kcal: 340, protein: 30, carbs: 30, fibre: 4  },
-      { name: 'Dal & Roti',               kcal: 390, protein: 18, carbs: 58, fibre: 11 },
-      { name: 'Greek Yogurt Parfait',     kcal: 230, protein: 14, carbs: 28, fibre: 3  },
-      { name: 'Vegetable Stir Fry & Noodles', kcal: 360, protein: 12, carbs: 52, fibre: 7 },
-      { name: 'Boiled Eggs & Whole Wheat Toast', kcal: 290, protein: 18, carbs: 26, fibre: 4 },
-      { name: 'Fruit & Nut Smoothie Bowl', kcal: 310, protein: 10, carbs: 50, fibre: 8 },
+      { name: 'Grilled Chicken & Rice',   kcal: 420, protein: 38, carbs: 45, fat: 8  },
+      { name: 'Avocado Toast',            kcal: 310, protein: 9,  carbs: 32, fat: 12  },
+      { name: 'Spinach & Paneer Curry',   kcal: 380, protein: 22, carbs: 28, fat: 18  },
+      { name: 'Oatmeal with Berries',     kcal: 260, protein: 8,  carbs: 46, fat: 6  },
+      { name: 'Tuna Salad Wrap',          kcal: 340, protein: 30, carbs: 30, fat: 10  },
+      { name: 'Dal & Roti',               kcal: 390, protein: 18, carbs: 58, fat: 14  },
+      { name: 'Greek Yogurt Parfait',     kcal: 230, protein: 14, carbs: 28, fat: 8  },
+      { name: 'Vegetable Stir Fry & Noodles', kcal: 360, protein: 12, carbs: 52, fat: 11 },
+      { name: 'Boiled Eggs & Whole Wheat Toast', kcal: 290, protein: 18, carbs: 26, fat: 9  },
+      { name: 'Fruit & Nut Smoothie Bowl', kcal: 310, protein: 10, carbs: 50, fat: 10 },
     ];
 
     // ──────────────────────────────────────────────────────────────────
@@ -1066,12 +1042,12 @@
 
     // Compute totals purely from stored meals — starts at zero
     function computeTotals(meals) {
-      const totals = { kcal: 0, protein: 0, carbs: 0, fibre: 0 };
+      const totals = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
       for (const m of meals) {
         totals.kcal    += m.kcal;
         totals.protein += m.protein;
         totals.carbs   += m.carbs;
-        totals.fibre   += m.fibre;
+        totals.fat     += m.fat;
       }
       return totals;
     }
@@ -1084,10 +1060,10 @@
     const ringLabelGoal       = document.getElementById('ring-label-goal');
     const macroProteinConsumed = document.getElementById('macro-protein-consumed');
     const macroCarbsConsumed  = document.getElementById('macro-carbs-consumed');
-    const macroFibreConsumed  = document.getElementById('macro-fibre-consumed');
+    const macroFatConsumed    = document.getElementById('macro-fat-consumed');
     const barProtein          = document.getElementById('bar-protein');
     const barCarbs            = document.getElementById('bar-carbs');
-    const barFibre            = document.getElementById('bar-fibre');
+    const barFat              = document.getElementById('bar-fat');
     const goalPctLabel        = document.getElementById('goal-pct-label');
     const mealsContainer      = document.getElementById('meals-container');
     const skeletonPlaceholder = document.getElementById('skeleton-placeholder');
@@ -1124,12 +1100,12 @@
       // ── Macro text ──
       macroProteinConsumed.textContent = totals.protein;
       macroCarbsConsumed.textContent   = totals.carbs;
-      macroFibreConsumed.textContent   = totals.fibre;
+      macroFatConsumed.textContent     = totals.fat;
 
       // ── Macro progress bars ──
       barProtein.style.width = `${Math.min(100, (totals.protein / GOALS.protein) * 100)}%`;
       barCarbs.style.width   = `${Math.min(100, (totals.carbs   / GOALS.carbs)   * 100)}%`;
-      barFibre.style.width   = `${Math.min(100, (totals.fibre   / GOALS.fibre)   * 100)}%`;
+      barFat.style.width       = `${Math.min(100, (totals.fat / GOALS.fat) * 100)}%`;
 
       // ── Daily goal percentage pill + mini bar ──
       const pct = Math.min(100, Math.round((totals.kcal / GOALS.kcal) * 100));
@@ -1187,7 +1163,7 @@
               ${meal.kcal} kcal &nbsp;·&nbsp;
               P ${meal.protein}g &nbsp;·&nbsp;
               C ${meal.carbs}g &nbsp;·&nbsp;
-              F ${meal.fibre}g
+              F ${meal.fat}g
             </p>
           </div>
           <span class="flex-shrink-0 text-xs text-muted whitespace-nowrap mt-0.5">
@@ -1254,97 +1230,76 @@
     // ──────────────────────────────────────────────────────────────────
     // ONBOARDING — BMR / TDEE / macro calculation
     // ──────────────────────────────────────────────────────────────────
-    const ACTIVITY_LABELS = {
-      '1.2':   'Sedentary',
-      '1.375': 'Lightly Active',
-      '1.55':  'Moderately Active',
-      '1.725': 'Very Active',
-    };
-
     const onboardingOverlay = document.getElementById('onboarding-overlay');
     const onboardingForm    = document.getElementById('onboarding-form');
     const onboardingError   = document.getElementById('onboarding-error');
 
-    function calculateTargets({ gender, age, weight, height, activityFactor }) {
-      // ── Step 1: Estimate body fat % via the US Navy / BMI hybrid method ──────
-      // We don't have waist/neck measurements so we estimate BF% from BMI using
-      // the Deurenberg (1991) equation, validated across large populations.
-      // BF% = (1.20 × BMI) + (0.23 × age) − (10.8 × sexFactor) − 5.4
-      const bmi       = weight / ((height / 100) ** 2);
-      const sexFactor = gender === 'male' ? 1 : 0;
-      const bfPct     = Math.min(
-        Math.max((1.20 * bmi) + (0.23 * age) - (10.8 * sexFactor) - 5.4, 5),
-        50
-      );
-
-      // ── Step 2: Lean Body Mass (LBM) ─────────────────────────────────────────
-      const lbm = weight * (1 - bfPct / 100);
-
-      // ── Step 3: BMR — weighted average of 3 validated equations ──────────────
-      //
-      // a) Mifflin-St Jeor (1990) — most accurate for general population
-      const bmrMifflin = gender === 'male'
+    function calculateTargets({ gender, age, weight, height }) {
+      // ── Step 1: BMR — Mifflin-St Jeor (1990) ─────────────────────────────────
+      // Most validated BMR equation for general non-athletic populations.
+      // The sex constant (+5 male / -161 female) accounts for average lean-mass
+      // differences at equivalent height and weight.
+      const bmr = gender === 'male'
         ? (10 * weight) + (6.25 * height) - (5 * age) + 5
         : (10 * weight) + (6.25 * height) - (5 * age) - 161;
 
-      // b) Katch-McArdle (1996) — most accurate when body composition is known
-      //    BMR = 370 + (21.6 × LBM)
-      const bmrKatch = 370 + (21.6 * lbm);
+      // ── Step 2: Total Daily Calories (BMR × activity buffer) ─────────────────
+      // 1.3 = WHO "low active" PAL — conservative baseline for a form without
+      // an activity selector; avoids sedentary under-eating (1.2) or assuming
+      // structured exercise the user may not do.
+      const ACTIVITY_BUFFER = 1.3;
+      const totalCalories   = bmr * ACTIVITY_BUFFER;
 
-      // c) Cunningham (1980) — preferred for athletic/lean individuals
-      //    BMR = 500 + (22 × LBM)
-      const bmrCunningham = 500 + (22 * lbm);
+      // ── Step 3: Protein (g/kg, age-stratified per DRI/RDA) ───────────────────
+      // Protein requirements track body mass and physiological stage, NOT total
+      // energy intake — so we assign grams directly, not a % of calories.
+      //
+      //  1–3  yrs → 1.10 g/kg  (rapid neural + tissue growth; IOM DRI)
+      //  4–13 yrs → 0.95 g/kg  (steady growth phase; IOM DRI)
+      // 14–45 yrs → 0.85 g/kg  (maintenance; above RDA floor of 0.8 g/kg)
+      //  45+  yrs → 1.10 g/kg  (offset anabolic resistance / sarcopenia;
+      //                          Cruz-Jentoft et al. 2019, PROT-AGE Study Group)
+      let proteinMultiplier;
+      if      (age >= 1 && age <= 3)  { proteinMultiplier = 1.10; }
+      else if (age <= 13)             { proteinMultiplier = 0.95; }
+      else if (age <= 45)             { proteinMultiplier = 0.85; }
+      else                            { proteinMultiplier = 1.10; }
 
-      // Weighted blend: Mifflin 40%, Katch-McArdle 40%, Cunningham 20%
-      // (Katch & Cunningham weight increases when we have LBM; equal at 40/20
-      // because LBM is estimated, not measured)
-      const bmr = (bmrMifflin * 0.40) + (bmrKatch * 0.40) + (bmrCunningham * 0.20);
+      const targetProtein = weight * proteinMultiplier;
+      const proteinKcal   = targetProtein * 4;   // 4 kcal per gram
 
-      // ── Step 4: TDEE — Refined activity multipliers ──────────────────────────
-      // Standard PAL (Physical Activity Level) values from FAO/WHO/UNU 2001 report
-      // refined for sedentary modern lifestyles (slightly reduced from classic Harris-Benedict)
-      const tdee = bmr * activityFactor;
+      // ── Step 4: Fat (% of total calories, age + sex stratified) ─────────────
+      // Fat is allocated as % of total calories because it serves systemic roles
+      // (hormone synthesis, fat-soluble vitamin absorption, neurological
+      // development) that scale with overall energy needs.
+      //
+      // Ages 1–3   → 35%  (IOM: higher fat essential for brain myelination)
+      // Ages 4–15  → 30%  (IOM AMDR lower bound for children/adolescents)
+      // Men  16+   → 25%  (AMDR midpoint; lower to headroom for carbs)
+      // Women 16+  → 30%  (Endocrine Society: supports oestrogen synthesis,
+      //                     menstrual regularity, and bone density)
+      let fatPercentage;
+      if      (age >= 1 && age <= 3)  { fatPercentage = 0.35; }
+      else if (age <= 15)             { fatPercentage = 0.30; }
+      else if (gender === 'male')     { fatPercentage = 0.25; }
+      else                            { fatPercentage = 0.30; }
 
-      // ── Step 5: Age-based metabolic adjustment ────────────────────────────────
-      // Metabolism slows ~0.7% per decade after age 30 (Speakman & Selman, 2003)
-      const ageDecline = age > 30 ? 1 - ((age - 30) / 10) * 0.007 : 1;
-      const tdeeAdj = tdee * ageDecline;
+      const fatKcal    = totalCalories * fatPercentage;
+      const targetFat  = fatKcal / 9;   // 9 kcal per gram
 
-      // ── Step 6: Protein target ────────────────────────────────────────────────
-      // ISSN (2017) & ACSM position stand: 1.6–2.2 g/kg for muscle maintenance;
-      // Scale within that range by activity level (higher activity → higher end)
-      // activityFactor range: 1.2 (sed) → 1.725 (very active)
-      const proteinRatio = 1.6 + ((activityFactor - 1.2) / (1.725 - 1.2)) * 0.55; // 1.6–2.15 g/kg
-      const targetProtein = weight * proteinRatio;
-      const proteinKcal   = targetProtein * 4;
-
-      // ── Step 7: Fat target ────────────────────────────────────────────────────
-      // AMDR: 20–35% of total kcal from fat; use 28% as evidence-supported midpoint
-      // (Mediterranean-style; Estruch et al. PREDIMED trial, NEJM 2018)
-      const fatPct       = 0.28;
-      const targetFat    = (tdeeAdj * fatPct) / 9;   // ÷ 9 kcal/g
-      const fatKcal      = targetFat * 9;
-
-      // ── Step 8: Carbohydrate target ───────────────────────────────────────────
-      // Remaining kcal after protein + fat, floored at 100 g (brain minimum)
-      const remainingKcal = tdeeAdj - proteinKcal - fatKcal;
-      const targetCarbs   = Math.max(remainingKcal / 4, 100);
-
-      // ── Step 9: Fibre target ──────────────────────────────────────────────────
-      // Institute of Medicine DRI: 14 g per 1000 kcal (AI for adults)
-      // Capped at 45 g (above which GI tolerance issues common)
-      const targetFiber = Math.min((tdeeAdj / 1000) * 14, 45);
+      // ── Step 5: Carbohydrates (Balancing Remainder Method) ───────────────────
+      // Carbs absorb whatever caloric space remains after protein and fat are
+      // placed. Protein and fat have hard physiological floors; carbs do not.
+      // This guarantees the three macros always sum to exactly totalCalories
+      // with no rounding drift. Math.max(0, …) guards against edge-case negatives.
+      const remainingKcal = totalCalories - proteinKcal - fatKcal;
+      const targetCarbs   = Math.max(0, remainingKcal / 4);   // 4 kcal per gram
 
       return {
-        targetKcal:    Math.round(tdeeAdj),
+        targetKcal:    Math.round(totalCalories),
         targetProtein: Math.round(targetProtein),
         targetFat:     Math.round(targetFat),
         targetCarbs:   Math.round(targetCarbs),
-        targetFiber:   Math.round(targetFiber),
-        // Store intermediates for transparency
-        bmr:    Math.round(bmr),
-        bfPct:  Math.round(bfPct * 10) / 10,
-        lbm:    Math.round(lbm * 10) / 10,
       };
     }
 
@@ -1367,7 +1322,6 @@
       const age      = parseFloat(document.getElementById('onb-age').value);
       const weight   = parseFloat(document.getElementById('onb-weight').value);
       const height   = parseFloat(document.getElementById('onb-height').value);
-      const activityFactor = parseFloat(document.getElementById('onb-activity').value);
 
       if (!name) {
         onboardingError.textContent = 'Please enter your name.';
@@ -1381,13 +1335,11 @@
       }
       onboardingError.classList.add('hidden');
 
-      const targets = calculateTargets({ gender, age, weight, height, activityFactor });
+      const targets = calculateTargets({ gender, age, weight, height });
 
-      // 4. Save profile + calculated targets to localStorage
+      // Save profile + calculated targets to localStorage
       saveProfile({
         name, gender, age, weight, height,
-        activity: ACTIVITY_LABELS[String(activityFactor)] || 'Moderately Active',
-        activityFactor,
         ...targets,
       });
 
@@ -1395,7 +1347,7 @@
       GOALS.kcal    = targets.targetKcal;
       GOALS.protein = targets.targetProtein;
       GOALS.carbs   = targets.targetCarbs;
-      GOALS.fibre   = targets.targetFiber;
+      GOALS.fat     = targets.targetFat;
       syncGoalLabels();
       refresh();
       updateAvatars();
@@ -1440,9 +1392,6 @@
         // Set gender radio
         const genderRadio = profileEditForm.querySelector(`input[name="prof-gender"][value="${profile.gender || 'male'}"]`);
         if (genderRadio) genderRadio.checked = true;
-        // Set activity select
-        const actSel = document.getElementById('prof-activity');
-        if (profile.activityFactor) actSel.value = String(profile.activityFactor);
       }
       profileEditError.classList.add('hidden');
       profileModal.classList.remove('hidden');
@@ -1478,7 +1427,6 @@
       const age            = parseFloat(document.getElementById('prof-age').value);
       const weight         = parseFloat(document.getElementById('prof-weight').value);
       const height         = parseFloat(document.getElementById('prof-height').value);
-      const activityFactor = parseFloat(document.getElementById('prof-activity').value);
 
       if (!name) {
         profileEditError.textContent = 'Please enter your name.';
@@ -1492,18 +1440,16 @@
       }
       profileEditError.classList.add('hidden');
 
-      const targets = calculateTargets({ gender, age, weight, height, activityFactor });
+      const targets = calculateTargets({ gender, age, weight, height });
       saveProfile({
         name, gender, age, weight, height,
-        activity: ACTIVITY_LABELS[String(activityFactor)] || 'Moderately Active',
-        activityFactor,
         ...targets,
       });
 
       GOALS.kcal    = targets.targetKcal;
       GOALS.protein = targets.targetProtein;
       GOALS.carbs   = targets.targetCarbs;
-      GOALS.fibre   = targets.targetFiber;
+      GOALS.fat     = targets.targetFat;
       syncGoalLabels();
       refresh();
       updateAvatars();
@@ -1574,7 +1520,7 @@ Look at the image carefully. Does it contain food, a meal, a drink, or edible it
 - NO (e.g. a person, animal, object, landscape, text, screenshot, blank image, or anything not edible) → return ONLY this JSON and nothing else:
 {"notFood": true, "reason": "one short sentence describing what you actually see, e.g. 'This appears to be a photo of a dog, not food.'"}
 
-Step 1 — Count first. If the food is made of discrete, countable units (dumplings, fries, nuggets, wings, slices of bread/pizza, samosas, eggs, cookies, shrimp, sushi pieces, etc.), visually count them one by one before anything else. Look for items stacked, overlapping, or partially hidden behind others, and include those in your count. State that count explicitly in your portion description (e.g. "6 dumplings" not just "a plate of dumplings"). The piece count is the single strongest signal of portion size — doubling the piece count should roughly double kcal/protein/carbs/fibre.
+Step 1 — Count first. If the food is made of discrete, countable units (dumplings, fries, nuggets, wings, slices of bread/pizza, samosas, eggs, cookies, shrimp, sushi pieces, etc.), visually count them one by one before anything else. Look for items stacked, overlapping, or partially hidden behind others, and include those in your count. State that count explicitly in your portion description (e.g. "6 dumplings" not just "a plate of dumplings"). The piece count is the single strongest signal of portion size — doubling the piece count should roughly double kcal/protein/carbs/fat.
 
 Step 2 — For foods that aren't made of discrete pieces (rice, curry, soup, smoothies, etc.), judge volume instead: how full the bowl/container is and how large that container appears, using reference objects in frame (cutlery, hands, packaging, drink cans) for real-world scale.
 
@@ -1588,9 +1534,9 @@ Return ONLY a JSON object — no markdown, no explanation — using this exact s
   "kcal": 420,
   "protein": 38,
   "carbs": 45,
-  "fibre": 4
+  "fat": 12
 }
-Scale kcal, protein, carbs and fibre to match the piece count or volume you identified — more pieces or a fuller container must produce noticeably higher numbers, fewer pieces or a smaller portion must produce noticeably lower numbers. All numeric nutrition values must be integers.`;
+Scale kcal, protein, carbs and fat to match the piece count or volume you identified — more pieces or a fuller container must produce noticeably higher numbers, fewer pieces or a smaller portion must produce noticeably lower numbers. All numeric nutrition values must be integers.`;
 
       const response = await fetch(GROQ_ENDPOINT, {
         method: 'POST',
@@ -1688,7 +1634,7 @@ Scale kcal, protein, carbs and fibre to match the piece count or volume you iden
           { label: `${meal.kcal} kcal`, color: 'bg-charcoal/10 text-charcoal' },
           { label: `P ${meal.protein}g`, color: 'bg-emerald-100 text-emerald-700' },
           { label: `C ${meal.carbs}g`,   color: 'bg-blue-100 text-blue-700'    },
-          { label: `F ${meal.fibre}g`,   color: 'bg-orange-100 text-orange-700' },
+          { label: `F ${meal.fat}g`,   color: 'bg-orange-100 text-orange-700' },
         ];
         pillData.forEach(({ label, color }) => {
           const span = document.createElement('span');
