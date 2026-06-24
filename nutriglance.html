@@ -977,7 +977,9 @@
       GOALS.kcal    = savedProfile.targetKcal;
       GOALS.protein = savedProfile.targetProtein;
       GOALS.carbs   = savedProfile.targetCarbs;
-      GOALS.fat     = savedProfile.targetFat;
+      // targetFat is the current key; fall back to targetFiber for profiles
+      // saved before the fibre→fat rename so existing users don't lose their goal
+      GOALS.fat     = savedProfile.targetFat ?? savedProfile.targetFiber ?? GOALS.fat;
     }
 
     // Keeps the "/ 90g" style goal labels in the macro card in sync with GOALS
@@ -1260,10 +1262,11 @@
       //  45+  yrs → 1.10 g/kg  (offset anabolic resistance / sarcopenia;
       //                          Cruz-Jentoft et al. 2019, PROT-AGE Study Group)
       let proteinMultiplier;
-      if      (age >= 1 && age <= 3)  { proteinMultiplier = 1.10; }
-      else if (age <= 13)             { proteinMultiplier = 0.95; }
-      else if (age <= 45)             { proteinMultiplier = 0.85; }
-      else                            { proteinMultiplier = 1.10; }
+      if      (age >= 1 && age <= 3)  { proteinMultiplier = 1.30; }  // Rapid early development
+      else if (age <= 13)             { proteinMultiplier = 1.15; }  // Active growth phase
+      else if (age <= 25)             { proteinMultiplier = 1.40; }  // Peak growth + hormonal surge
+      else if (age <= 45)             { proteinMultiplier = 1.00; }  // Maintenance baseline
+      else                            { proteinMultiplier = 1.25; }  // Stronger sarcopenia buffer
 
       const targetProtein = weight * proteinMultiplier;
       const proteinKcal   = targetProtein * 4;   // 4 kcal per gram
