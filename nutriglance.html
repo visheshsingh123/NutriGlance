@@ -1046,10 +1046,11 @@
     function computeTotals(meals) {
       const totals = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
       for (const m of meals) {
-        totals.kcal    += m.kcal;
-        totals.protein += m.protein;
-        totals.carbs   += m.carbs;
-        totals.fat     += m.fat;
+        totals.kcal    += m.kcal    || 0;
+        totals.protein += m.protein || 0;
+        totals.carbs   += m.carbs   || 0;
+        // fall back to m.fibre for meals logged before the fibre→fat rename
+        totals.fat     += m.fat ?? m.fibre ?? 0;
       }
       return totals;
     }
