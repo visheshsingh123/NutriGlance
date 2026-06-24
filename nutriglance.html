@@ -58,7 +58,6 @@
     body.dark .peer:checked ~ .peer-checked\:text-charcoal { color: #E2E8F0 !important; }
     body.dark .border-white\/20 { border-color: rgba(255,255,255,0.1) !important; }
     body.dark .ring-track { stroke: #334155; }
-    body.dark .ring-fill  { stroke: #10B981; }
     body.dark .skeleton { background: linear-gradient(90deg, #1E293B 25%, #334155 50%, #1E293B 75%); }
     body.dark #bottom-nav { background-color: #1E293B !important; border-color: #334155 !important; }
     body.dark .bottom-nav-link { color: #94A3B8 !important; }
@@ -1846,6 +1845,7 @@ Scale kcal, protein, carbs and fat to match the piece count or volume you identi
       localStorage.setItem(DARK_KEY, on ? '1' : '0');
     }
     applyDark(localStorage.getItem(DARK_KEY) === '1');
+    if (localStorage.getItem(DARK_KEY) === '1') refresh();
     dmToggle.addEventListener('click', () => { applyDark(!document.body.classList.contains('dark')); refresh(); });
 
     // ── Notifications toggle ──
