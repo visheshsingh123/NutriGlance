@@ -1,0 +1,37 @@
+{
+  "name": "NutriGlance – AI Nutrition Tracker",
+  "short_name": "NutriGlance",
+  "description": "Snap a photo. Know your macros in seconds.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#10B981",
+  "theme_color": "#10B981",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "fitness", "food"],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/nutriglance.html",
+      "description": "Open your nutrition dashboard"
+    },
+    {
+      "name": "AI Chef",
+      "url": "/aichef.html",
+      "description": "Get recipe ideas from your ingredients"
+    }
+  ]
+}
