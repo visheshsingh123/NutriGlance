@@ -502,6 +502,46 @@
           </div>
         </div>
 
+        <!-- ── Tell AI what you ate ── -->
+        <div class="mt-auto pt-2 border-t border-slate-100">
+          <p class="text-xs font-semibold text-muted uppercase tracking-wide mb-2">Tell AI what you ate</p>
+
+          <!-- Input row -->
+          <div class="flex gap-2">
+            <input
+              id="text-meal-input"
+              type="text"
+              placeholder="e.g. 2 rotis with dal…"
+              class="flex-1 min-w-0 text-sm rounded-xl border border-slate-200 bg-slate-50
+                     px-3 py-2 text-charcoal placeholder-muted
+                     focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent
+                     transition-all duration-150"
+              autocomplete="off"
+            />
+            <button
+              id="text-meal-btn"
+              aria-label="Analyse meal text"
+              class="flex-shrink-0 w-9 h-9 rounded-xl bg-brand text-white
+                     flex items-center justify-center
+                     hover:bg-emerald-600 active:scale-95 transition-all duration-150
+                     disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <!-- send arrow -->
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2.5"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Status / mini result area -->
+          <div id="text-meal-status" class="hidden mt-2 text-xs text-muted flex items-center gap-1.5">
+            <!-- filled by JS -->
+          </div>
+        </div>
+
       </section><!-- /col 1 -->
 
 
@@ -1510,6 +1550,110 @@
     //    on this device/browser indefinitely.
     // API key is handled server-side via /api/groq proxy — no key needed in browser
     const GROQ_ENDPOINT = '/api/groq';
+
+    // ── Text-based meal logger ───────────────────────────────────────────────
+    const textMealInput  = document.getElementById('text-meal-input');
+    const textMealBtn    = document.getElementById('text-meal-btn');
+    const textMealStatus = document.getElementById('text-meal-status');
+
+    async function analyseTextMeal(description) {
+      const prompt = `You are a professional nutritionist. The user has described a meal in text. Estimate the nutritional content.
+
+Meal description: "${description}"
+
+Rules:
+- If the text does not describe food or a meal, return: {"notFood": true, "reason": "short explanation"}
+- Otherwise return ONLY a JSON object with no markdown, no explanation:
+{
+  "name": "short meal name",
+  "kcal": 420,
+  "protein": 38,
+  "carbs": 45,
+  "fat": 12
+}
+All numeric values must be integers. Be realistic and accurate.`;
+
+      const response = await fetch(GROQ_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'qwen/qwen3.6-27b',
+          max_tokens: 300,
+          reasoning_effort: 'none',
+          reasoning_format: 'hidden',
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err?.error?.message || `API error ${response.status}`);
+      }
+
+      const data  = await response.json();
+      let raw     = data.choices?.[0]?.message?.content ?? '';
+      raw = raw.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+      raw = raw.replace(/```json|```/gi, '').trim();
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (match) raw = match[0];
+      return JSON.parse(raw);
+    }
+
+    async function handleTextMeal() {
+      const desc = textMealInput.value.trim();
+      if (!desc) return;
+
+      // Loading state
+      textMealBtn.disabled = true;
+      textMealStatus.className = 'mt-2 text-xs text-muted flex items-center gap-1.5';
+      textMealStatus.innerHTML = `
+        <svg class="animate-spin flex-shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="#E2E8F0" stroke-width="3"/>
+          <path d="M12 2a10 10 0 0 1 10 10" stroke="#10B981" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        Analysing…`;
+
+      try {
+        const result = await analyseTextMeal(desc);
+
+        if (result.notFood) {
+          textMealStatus.innerHTML = `<span class="text-red-400">⚠️ ${escapeHtml(result.reason || 'Not recognised as food.')}</span>`;
+          return;
+        }
+
+        // Log the meal
+        const allMeals = loadAllMeals();
+        allMeals.push({
+          name:     result.name,
+          kcal:     result.kcal,
+          protein:  result.protein,
+          carbs:    result.carbs,
+          fat:      result.fat,
+          loggedAt: new Date().toISOString(),
+          source:   'text',
+        });
+        saveMeals(allMeals);
+        refresh();
+
+        // Show quick confirmation then clear
+        textMealStatus.innerHTML = `<span class="text-brand font-semibold">✅ Logged: ${escapeHtml(result.name)} — ${result.kcal} kcal · P ${result.protein}g · C ${result.carbs}g · F ${result.fat}g</span>`;
+        textMealInput.value = '';
+        showToast(`✅ ${result.name} logged!`);
+
+        // Hide status after 4s
+        setTimeout(() => { textMealStatus.className = 'hidden'; }, 4000);
+
+      } catch (err) {
+        textMealStatus.innerHTML = `<span class="text-red-400">❌ ${escapeHtml(err.message || 'Something went wrong.')}</span>`;
+      } finally {
+        textMealBtn.disabled = false;
+      }
+    }
+
+    textMealBtn.addEventListener('click', handleTextMeal);
+    textMealInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); handleTextMeal(); }
+    });
 
     // ── Upload zone UI state helpers ─────────────────────────────────────────
     const uploadZone      = document.getElementById('upload-zone');
