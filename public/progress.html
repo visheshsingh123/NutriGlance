@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Progress – NutriGlance</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+CiAgPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTYiIGZpbGw9IiMxMEI5ODEiLz4KICA8cGF0aCBkPSJNMTcgNDQKICAgICAgICAgICBDMTcgMjQsIDMzIDE0LCA0OSAxNQogICAgICAgICAgIEM1MCAzMywgMzkgNDcsIDIxIDQ3CiAgICAgICAgICAgQzE4LjggNDcsIDE3IDQ1LjIsIDE3IDQzIFoiCiAgICAgICAgZmlsbD0iIzBGMTcyQSIvPgo8L3N2Zz4K" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand:    '#10B981',
+            charcoal: '#0F172A',
+            bg:       '#EFF7F4',
+            card:     '#FFFFFF',
+            muted:    '#94A3B8',
+          },
+          fontFamily: {
+            display: ['"Space Grotesk"', 'sans-serif'],
+            body:    ['"Inter"',         'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; transition: background-color 0.3s ease, color 0.3s ease; }
+
+    /* ── Dark mode ── */
+    body.dark { background-color: #0F172A !important; color: #E2E8F0 !important; }
+    body.dark .bg-bg        { background-color: #0F172A !important; }
+    body.dark .bg-card      { background-color: #1E293B !important; }
+    body.dark .bg-slate-50  { background-color: #1E293B !important; }
+    body.dark .bg-slate-100 { background-color: #273549 !important; }
+    body.dark .border-slate-100,
+    body.dark .border-slate-200 { border-color: #334155 !important; }
+    body.dark .text-charcoal    { color: #E2E8F0 !important; }
+    body.dark .text-muted       { color: #94A3B8 !important; }
+    body.dark .text-slate-500   { color: #94A3B8 !important; }
+    body.dark nav.bg-brand      { background-color: #059669 !important; }
+    body.dark footer.bg-charcoal{ background-color: #020617 !important; }
+    body.dark input, body.dark select, body.dark textarea {
+      background-color: #1E293B !important; color: #E2E8F0 !important; border-color: #334155 !important;
+    }
+    body.dark .shadow-sm { box-shadow: 0 1px 4px rgba(0,0,0,0.4) !important; }
+    body.dark .bg-emerald-50    { background-color: #064e3b !important; }
+    body.dark .border-white\/20 { border-color: rgba(255,255,255,0.1) !important; }
+    body.dark .hover\:bg-white\/20:hover  { background-color: rgba(0,0,0,0.15) !important; }
+    body.dark .hover\:bg-slate-50:hover   { background-color: #334155 !important; }
+    body.dark .hover\:bg-slate-100:hover  { background-color: #334155 !important; }
+    body.dark .hover\:bg-emerald-100:hover{ background-color: #065f46 !important; }
+    body.dark .divide-slate-100 > * + *   { border-color: #334155 !important; }
+    body.dark .ring-track { stroke: #334155; }
+    body.dark #bottom-nav { background-color: #1E293B !important; border-color: #334155 !important; }
+    body.dark .bottom-nav-link { color: #94A3B8 !important; }
+    body.dark .bottom-nav-link.active { color: #34D399 !important; }
+
+    /* ── Navbar ── */
+    #mobile-menu { max-height: 0; overflow: hidden; transition: max-height 0.35s ease, opacity 0.3s ease; opacity: 0; }
+    #mobile-menu.open { max-height: 400px; opacity: 1; }
+    .nav-link.active { color: #0F172A; font-weight: 700; }
+    .nav-link.active::after { content: ''; display: block; height: 2px; background: #0F172A; border-radius: 2px; margin-top: 2px; }
+    .ham-bar { transition: transform 0.25s ease, opacity 0.25s ease; }
+    body.menu-open #ham-top { transform: translateY(6px) rotate(45deg); }
+    body.menu-open #ham-mid { opacity: 0; transform: scaleX(0); }
+    body.menu-open #ham-bot { transform: translateY(-6px) rotate(-45deg); }
+
+    /* ── Circular ring ── */
+    .ring-track { stroke: #E2E8F0; }
+    .ring-fill  { stroke: #10B981; stroke-linecap: round; transform-origin: 50% 50%; transform: rotate(-90deg); transition: stroke-dashoffset 0.7s ease; }
+
+    /* ── Animations ── */
+    @keyframes fadeSlideIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .fade-in { animation: fadeSlideIn 0.3s ease both; }
+
+    /* ── Footer ── */
+    .footer-link:hover { color: #10B981; }
+
+    /* ── Bottom mobile nav ── */
+    #bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 40;
+      background-color: #FFFFFF;
+      border-top: 1px solid #E2E8F0;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .bottom-nav-link {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      flex: 1;
+      padding: 8px 2px 6px;
+      color: #94A3B8;
+      font-size: 10.5px;
+      font-weight: 600;
+      transition: color 0.15s ease;
+    }
+    .bottom-nav-link.active { color: #10B981; }
+    .bottom-nav-link svg { transition: transform 0.15s ease; }
+    .bottom-nav-link:active svg { transform: scale(0.88); }
+
+    /* ── Calendar grid ── */
+    .cal-day { transition: background 0.15s ease, transform 0.1s ease; }
+    .cal-day:hover { transform: scale(1.05); }
+
+    /* ── Log modal ── */
+    #log-modal { transition: opacity 0.25s ease; }
+
+    /* ── Tooltip for chart ── */
+    .chartjs-tooltip { pointer-events: none; }
+
+    /* ── Streak flame pulse ── */
+    @keyframes flamePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+    .flame { animation: flamePulse 1.8s ease-in-out infinite; display: inline-block; }
+
+    /* ── Settings modal dark overlays ── */
+    body.dark #settings-modal .bg-card  { background-color: #1E293B !important; }
+    body.dark #settings-modal .bg-slate-100 { background-color: #273549 !important; }
+  </style>
+</head>
+
+<body class="bg-bg min-h-screen font-body text-charcoal flex flex-col">
+
+<!-- ══════════════════════════════════════════════════════════════
+     NAVBAR
+══════════════════════════════════════════════════════════════ -->
+<nav class="bg-brand shadow-sm sticky top-0 z-40">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6">
+    <div class="flex items-center justify-between h-14">
+
+      <!-- Logo -->
+      <a href="index.html" class="flex items-center gap-2 flex-shrink-0">
+        <span class="font-display text-xl font-extrabold tracking-tight">
+          <span class="text-charcoal">Nutri</span><span class="text-white">Glance</span>
+        </span>
+        <span class="hidden sm:inline text-charcoal/70 font-medium text-xs">Your personal AI dietitian</span>
+      </a>
+
+      <!-- Desktop nav -->
+      <div class="hidden md:flex items-center gap-1">
+        <a href="nutriglance.html" class="nav-link px-4 py-1.5 text-sm text-charcoal/70 rounded-lg hover:bg-white/20 hover:text-charcoal transition-colors">Dashboard</a>
+        <a href="meals.html" class="nav-link px-4 py-1.5 text-sm text-charcoal/70 rounded-lg hover:bg-white/20 hover:text-charcoal transition-colors">Meals</a>
+        <a href="progress.html"   class="nav-link active px-4 py-1.5 text-sm text-charcoal/90 rounded-lg hover:bg-white/20 transition-colors">Progress</a>
+        <a href="aichef.html"     class="nav-link px-4 py-1.5 text-sm text-charcoal/70 rounded-lg hover:bg-white/20 hover:text-charcoal transition-colors">AI Chef</a>
+        <button id="settings-nav-btn" class="nav-link px-4 py-1.5 text-sm text-charcoal/70 rounded-lg hover:bg-white/20 hover:text-charcoal transition-colors">Settings</button>
+      </div>
+
+      <!-- Avatar -->
+      <div class="hidden md:flex items-center gap-2">
+        <button id="profile-btn"
+                class="flex items-center justify-center w-8 h-8 rounded-full bg-charcoal/20 text-charcoal font-bold text-sm select-none cursor-pointer hover:bg-charcoal/30 transition-colors"
+                title="Profile" aria-label="Open profile">
+          <span id="avatar-initial">?</span>
+        </button>
+      </div>
+
+      <!-- Hamburger -->
+      <button id="hamburger" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-menu"
+              class="md:hidden flex flex-col justify-center items-center w-9 h-9 gap-[5px] rounded-lg hover:bg-white/20 transition-colors">
+        <span id="ham-top" class="ham-bar block w-5 h-0.5 bg-charcoal rounded-full origin-center"></span>
+        <span id="ham-mid" class="ham-bar block w-5 h-0.5 bg-charcoal rounded-full origin-center"></span>
+        <span id="ham-bot" class="ham-bar block w-5 h-0.5 bg-charcoal rounded-full origin-center"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile menu -->
+  <div id="mobile-menu" role="navigation" aria-label="Mobile navigation">
+    <div class="max-w-5xl mx-auto px-4 pb-4 flex flex-col gap-1">
+      <a href="nutriglance.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-charcoal/70 hover:bg-white/20 hover:text-charcoal transition-colors">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+      <a href="meals.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-charcoal/70 hover:bg-white/20 hover:text-charcoal transition-colors">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        Meals
+      </a>
+      <a href="progress.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-charcoal bg-white/25">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Progress
+      </a>
+      <a href="aichef.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-charcoal/70 hover:bg-white/20 hover:text-charcoal transition-colors">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>
+        AI Chef
+      </a>
+      <button id="settings-btn-mobile" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-charcoal/70 hover:bg-white/20 hover:text-charcoal transition-colors w-full text-left">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+        Settings
+      </button>
+      <div class="border-t border-white/20 mt-1 pt-3 flex items-center gap-3 px-3">
+        <button id="profile-btn-mobile" class="w-8 h-8 rounded-full bg-charcoal/20 flex items-center justify-center text-charcoal font-bold text-sm hover:bg-charcoal/30 transition-colors" aria-label="Profile">
+          <span id="avatar-initial-mobile">?</span>
+        </button>
+        <div>
+          <p class="text-sm font-semibold text-charcoal" id="mobile-profile-name">Profile</p>
+          <p class="text-xs text-charcoal/60">Tap to view profile</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════════════
+     BOTTOM NAVBAR — mobile only
+══════════════════════════════════════════════════════════════ -->
+<nav id="bottom-nav" class="md:hidden flex items-stretch shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
+  <a href="nutriglance.html" class="bottom-nav-link">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    Dashboard
+  </a>
+  <a href="meals.html" class="bottom-nav-link">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    Meals
+  </a>
+  <a href="progress.html" class="bottom-nav-link active">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Progress
+  </a>
+  <a href="aichef.html" class="bottom-nav-link">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>
+    AI Chef
+  </a>
+  <button id="settings-btn-bottom" class="bottom-nav-link">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+    Settings
+  </button>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MAIN
+══════════════════════════════════════════════════════════════ -->
+<main class="max-w-5xl mx-auto px-4 py-8 pb-24 md:pb-8 flex-1 w-full">
+
+  <!-- Page header -->
+  <div class="mb-7 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+    <div>
+      <span class="inline-block text-brand text-xs font-bold uppercase tracking-wider mb-1">Progress Tracker</span>
+      <h1 class="font-display text-3xl font-extrabold text-charcoal">Your Journey</h1>
+      <p class="text-sm text-muted mt-1">Log your daily nutrition and watch your habits build over time.</p>
+    </div>
+    <button id="open-log-btn"
+            class="flex items-center gap-2 bg-brand text-white text-sm font-semibold px-5 py-2.5 rounded-xl
+                   hover:bg-emerald-600 active:scale-95 transition-all duration-150 shadow-sm self-start sm:self-auto">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Log Today
+    </button>
+  </div>
+
+  <!-- ── STAT CARDS ROW ── -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+
+    <!-- Streak -->
+    <div class="bg-card rounded-2xl p-5 shadow-sm flex flex-col gap-1 fade-in">
+      <p class="text-xs font-semibold text-muted uppercase tracking-wider">Streak</p>
+      <p class="font-display text-3xl font-extrabold text-charcoal" id="stat-streak">0</p>
+      <p class="text-xs text-muted">days <span class="flame">🔥</span></p>
+    </div>
+
+    <!-- Avg Calories -->
+    <div class="bg-card rounded-2xl p-5 shadow-sm flex flex-col gap-1 fade-in" style="animation-delay:0.05s">
+      <p class="text-xs font-semibold text-muted uppercase tracking-wider">7-Day Avg</p>
+      <p class="font-display text-3xl font-extrabold text-charcoal" id="stat-avg-cal">—</p>
+      <p class="text-xs text-muted">kcal / day</p>
+    </div>
+
+    <!-- Days Logged -->
+    <div class="bg-card rounded-2xl p-5 shadow-sm flex flex-col gap-1 fade-in" style="animation-delay:0.1s">
+      <p class="text-xs font-semibold text-muted uppercase tracking-wider">Days Logged</p>
+      <p class="font-display text-3xl font-extrabold text-charcoal" id="stat-days">0</p>
+      <p class="text-xs text-muted">total entries</p>
+    </div>
+
+    <!-- Goal Hit Rate -->
+    <div class="bg-card rounded-2xl p-5 shadow-sm flex flex-col gap-1 fade-in" style="animation-delay:0.15s">
+      <p class="text-xs font-semibold text-muted uppercase tracking-wider">Goal Hit Rate</p>
+      <p class="font-display text-3xl font-extrabold text-charcoal" id="stat-goal-rate">—</p>
+      <p class="text-xs text-muted">within ±10% target</p>
+    </div>
+
+  </div>
+
+  <!-- ── MAIN GRID ── -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+    <!-- LEFT: Chart (2/3 width) -->
+    <div class="lg:col-span-2 flex flex-col gap-5">
+
+      <!-- Calorie chart card -->
+      <div class="bg-card rounded-2xl p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-5">
+          <div>
+            <h2 class="font-display text-xl font-extrabold text-charcoal">Calorie History</h2>
+            <p class="text-xs text-muted mt-0.5">Daily intake vs. your goal</p>
+          </div>
+          <div class="flex gap-1.5">
+            <button data-range="7"  class="range-btn text-xs font-semibold px-3 py-1.5 rounded-lg bg-brand text-white transition-colors">7d</button>
+            <button data-range="14" class="range-btn text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-100 text-muted hover:bg-slate-200 transition-colors">14d</button>
+            <button data-range="30" class="range-btn text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-100 text-muted hover:bg-slate-200 transition-colors">30d</button>
+          </div>
+        </div>
+        <div class="relative h-56">
+          <canvas id="calorie-chart"></canvas>
+          <div id="chart-empty" class="hidden absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><polyline points="7 16 11 10 15 13 19 7"/></svg>
+            <p class="text-sm font-semibold text-muted">No data yet</p>
+            <p class="text-xs text-slate-400">Start logging days to see your chart</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Macro chart card -->
+      <div class="bg-card rounded-2xl p-6 shadow-sm">
+        <h2 class="font-display text-xl font-extrabold text-charcoal mb-1">Macro Trends</h2>
+        <p class="text-xs text-muted mb-5">7-day protein, carbs & fat (g)</p>
+        <div class="relative h-48">
+          <canvas id="macro-chart"></canvas>
+          <div id="macro-chart-empty" class="hidden absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
+            <p class="text-sm font-semibold text-muted">No macro data yet</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: Today's ring + Calendar (1/3) -->
+    <div class="flex flex-col gap-5">
+
+      <!-- Today's summary ring -->
+      <div class="bg-card rounded-2xl p-6 shadow-sm flex flex-col items-center gap-4">
+        <div class="w-full flex items-center justify-between">
+          <h2 class="font-display text-lg font-extrabold text-charcoal">Today</h2>
+          <span class="text-xs text-muted" id="today-date-label"></span>
+        </div>
+
+        <svg width="148" height="148" viewBox="0 0 148 148">
+          <circle class="ring-track" cx="74" cy="74" r="58" fill="none" stroke-width="12"/>
+          <circle id="today-ring-fill" class="ring-fill" cx="74" cy="74" r="58" fill="none" stroke-width="12"
+                  stroke-dasharray="364" stroke-dashoffset="364"/>
+          <text x="74" y="69" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="20" font-weight="800" fill="#0F172A" id="today-ring-kcal">0</text>
+          <text x="74" y="88" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="500" fill="#64748B">
+            /<tspan id="today-ring-goal">2100</tspan> kcal
+          </text>
+        </svg>
+
+        <!-- Mini macro bars -->
+        <div class="w-full flex flex-col gap-2 text-xs font-semibold">
+          <div>
+            <div class="flex justify-between mb-1"><span>Protein</span><span><span id="td-protein">0</span>g</span></div>
+            <div class="w-full bg-slate-100 rounded-full h-1.5"><div id="td-bar-protein" class="h-1.5 rounded-full bg-brand transition-all duration-500" style="width:0%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1"><span>Carbs</span><span><span id="td-carbs">0</span>g</span></div>
+            <div class="w-full bg-slate-100 rounded-full h-1.5"><div id="td-bar-carbs" class="h-1.5 rounded-full bg-emerald-400 transition-all duration-500" style="width:0%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1"><span>Fat</span><span><span id="td-fat">0</span>g</span></div>
+            <div class="w-full bg-slate-100 rounded-full h-1.5"><div id="td-bar-fat" class="h-1.5 rounded-full bg-amber-400 transition-all duration-500" style="width:0%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1"><span>Fibre</span><span><span id="td-fibre">0</span>g</span></div>
+            <div class="w-full bg-slate-100 rounded-full h-1.5"><div id="td-bar-fibre" class="h-1.5 rounded-full bg-teal-400 transition-all duration-500" style="width:0%"></div></div>
+          </div>
+        </div>
+
+        <button id="open-log-btn-2"
+                class="w-full bg-brand text-white text-sm font-semibold py-2.5 rounded-xl
+                       hover:bg-emerald-600 active:scale-95 transition-all duration-150">
+          + Update Today
+        </button>
+      </div>
+
+      <!-- Calendar heatmap -->
+      <div class="bg-card rounded-2xl p-5 shadow-sm">
+        <h2 class="font-display text-lg font-extrabold text-charcoal mb-4">Monthly Log</h2>
+        <div id="calendar-grid" class="grid grid-cols-7 gap-1.5"></div>
+        <div class="flex items-center gap-3 mt-4 text-xs text-muted">
+          <div class="flex items-center gap-1"><div class="w-3 h-3 rounded-sm bg-slate-100"></div> None</div>
+          <div class="flex items-center gap-1"><div class="w-3 h-3 rounded-sm bg-emerald-200"></div> Under</div>
+          <div class="flex items-center gap-1"><div class="w-3 h-3 rounded-sm bg-brand"></div> On target</div>
+          <div class="flex items-center gap-1"><div class="w-3 h-3 rounded-sm bg-amber-400"></div> Over</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── LOG HISTORY TABLE ── -->
+  <div class="bg-card rounded-2xl p-6 shadow-sm mt-5">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="font-display text-xl font-extrabold text-charcoal">Log History</h2>
+      <button id="clear-all-btn"
+              class="text-xs font-semibold text-red-400 hover:text-red-600 border border-red-200 hover:border-red-400 rounded-lg px-3 py-1 transition-colors hidden">
+        Clear All
+      </button>
+    </div>
+
+    <div id="history-empty" class="py-12 text-center text-muted text-sm hidden">
+      <svg class="mx-auto mb-3 opacity-30" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      No entries yet. Hit <strong>Log Today</strong> to get started!
+    </div>
+
+    <!-- Table header -->
+    <div id="history-table" class="hidden">
+      <div class="grid grid-cols-6 text-xs font-semibold text-muted uppercase tracking-wider pb-2 border-b border-slate-100 mb-1 px-1">
+        <span class="col-span-2">Date</span>
+        <span class="text-right">Calories</span>
+        <span class="text-right">Protein</span>
+        <span class="text-right">Carbs</span>
+        <span class="text-right">Fat</span>
+      </div>
+      <div id="history-rows" class="flex flex-col divide-y divide-slate-100"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ══════════════════════════════════════════════════════════════
+     LOG MODAL
+══════════════════════════════════════════════════════════════ -->
+<div id="log-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/60 backdrop-blur-sm">
+  <div class="bg-card w-full max-w-md rounded-2xl shadow-xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
+
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="font-display text-2xl font-extrabold text-charcoal">Log Your Day</h2>
+      <button id="log-modal-close" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors" aria-label="Close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <form id="log-form" class="flex flex-col gap-4" novalidate>
+
+      <!-- Date -->
+      <div>
+        <label for="log-date" class="block text-xs font-semibold text-charcoal uppercase tracking-wide mb-1.5">Date</label>
+        <input id="log-date" type="date"
+               class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand" />
+      </div>
+
+      <!-- Calories -->
+      <div>
+        <label for="log-cal" class="block text-xs font-semibold text-charcoal uppercase tracking-wide mb-1.5">Calories <span class="text-muted normal-case font-normal">(kcal)</span></label>
+        <input id="log-cal" type="number" inputmode="numeric" min="0" max="10000" placeholder="e.g. 1850"
+               class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand" />
+      </div>
+
+      <!-- Macros grid -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label for="log-protein" class="block text-xs font-semibold text-charcoal uppercase tracking-wide mb-1.5">Protein <span class="text-muted normal-case font-normal">(g)</span></label>
+          <input id="log-protein" type="number" inputmode="decimal" min="0" placeholder="e.g. 80"
+                 class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand" />
+        </div>
+        <div>
+          <label for="log-carbs" class="block text-xs font-semibold text-charcoal uppercase tracking-wide mb-1.5">Carbs <span class="text-muted normal-case font-normal">(g)</span></label>
+          <input id="log-carbs" type="number" inputmode="decimal" min="0" placeholder="e.g. 220"
+                 class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand" />
+        </div>
+        <div>
+          <label for="log-fat" class="block text-xs font-semibold text-charcoal uppercase tracking-wide mb-1.5">Fat <span class="text-muted normal-case font-normal">(g)</span></label>
+          <input id="log-fat" type="number" inputmode="decimal" min="0" placeholder="e.g. 60"
+                 class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand" />
+        </div>
+        <div>
+          <label for="log-fibre" class="block text-xs font-semibold text-charcoal uppercase tracking-wide mb-1.5">Fibre <span class="text-muted normal-case font-normal">(g)</span></label>
+          <input id="log-fibre" type="number" inputmode="decimal" min="0" placeholder="e.g. 28"
+                 class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand" />
+        </div>
+      </div>
+
+      <!-- Water -->
+      <div>
+        <label for="log-water" class="block text-xs font-semibold text-charcoal uppercase tracking-wide mb-1.5">Water <span class="text-muted normal-case font-normal">(glasses)</span></label>
+        <input id="log-water" type="number" inputmode="numeric" min="0" max="20" placeholder="e.g. 8"
+               class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand" />
+      </div>
+
+      <!-- Notes -->
+      <div>
+        <label for="log-notes" class="block text-xs font-semibold text-charcoal uppercase tracking-wide mb-1.5">Notes <span class="text-muted normal-case font-normal">(optional)</span></label>
+        <textarea id="log-notes" rows="2" placeholder="How did you feel today? Any meals worth noting?"
+               class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand resize-none"></textarea>
+      </div>
+
+      <p id="log-error" class="hidden text-xs font-semibold text-red-500 -mb-1"></p>
+
+      <div class="flex gap-3 mt-1">
+        <button type="button" id="log-cancel-btn"
+                class="flex-1 text-sm font-semibold text-muted border border-slate-200 rounded-xl py-2.5 hover:bg-slate-50 transition-colors">
+          Cancel
+        </button>
+        <button type="submit"
+                class="flex-1 bg-brand text-white text-sm font-semibold rounded-xl py-2.5
+                       hover:bg-emerald-600 active:scale-95 transition-all duration-150">
+          Save Entry
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     SETTINGS MODAL
+══════════════════════════════════════════════════════════════ -->
+<div id="settings-modal"
+     class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4
+            bg-charcoal/60 backdrop-blur-sm">
+  <div class="bg-card w-full max-w-sm rounded-2xl shadow-xl overflow-hidden">
+
+    <div class="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+      <h2 class="font-display text-lg font-extrabold text-charcoal">Settings</h2>
+      <button id="settings-modal-close"
+              class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors flex items-center justify-center text-muted"
+              aria-label="Close settings">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="divide-y divide-slate-100">
+
+      <!-- Dark Mode -->
+      <div class="flex items-center justify-between px-6 py-4">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-charcoal">Dark Mode</p>
+            <p class="text-xs text-muted">Easier on the eyes at night</p>
+          </div>
+        </div>
+        <button id="dark-mode-toggle"
+                role="switch" aria-checked="false"
+                class="relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none bg-slate-200"
+                aria-label="Toggle dark mode">
+          <span id="dark-mode-thumb"
+                class="absolute top-0.5 left-0 w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform duration-200 translate-x-0.5"></span>
+        </button>
+      </div>
+
+      <!-- Notifications -->
+      <div class="flex items-center justify-between px-6 py-4">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-charcoal">Meal Reminders</p>
+            <p class="text-xs text-muted">Daily log nudges</p>
+          </div>
+        </div>
+        <button id="notif-toggle"
+                role="switch" aria-checked="true"
+                class="relative inline-flex w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none bg-brand"
+                aria-label="Toggle meal reminders">
+          <span id="notif-thumb"
+                class="inline-block w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform duration-200 translate-x-5 mt-0.5"></span>
+        </button>
+      </div>
+
+      <!-- Units -->
+      <div class="flex items-center justify-between px-6 py-4">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-charcoal">Units</p>
+            <p class="text-xs text-muted">Metric (kg / cm)</p>
+          </div>
+        </div>
+        <span class="text-xs font-semibold text-brand bg-emerald-50 px-2.5 py-1 rounded-full">Metric</span>
+      </div>
+
+      <!-- Help & Support -->
+      <div class="px-6 py-4">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <p class="text-sm font-semibold text-charcoal">Help &amp; Support</p>
+        </div>
+        <div class="ml-11 flex flex-col gap-2">
+          <a href="mailto:nutriglanceai@gmail.com"
+             class="flex items-center gap-2 text-xs font-semibold text-brand hover:underline">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            nutriglanceai@gmail.com
+          </a>
+          <p class="text-xs text-muted">We typically reply within 24 hours.</p>
+          <div class="flex gap-2 mt-1">
+            <a href="#" class="text-xs font-semibold text-muted hover:text-charcoal transition-colors">Privacy Policy</a>
+            <span class="text-muted">·</span>
+            <a href="#" class="text-xs font-semibold text-muted hover:text-charcoal transition-colors">Terms of Service</a>
+            <span class="text-muted">·</span>
+            <a href="#" class="text-xs font-semibold text-muted hover:text-charcoal transition-colors">FAQ</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Version + Reset -->
+      <div class="px-6 py-4 flex items-center justify-between">
+        <p class="text-xs text-muted">NutriGlance v1.0.0</p>
+        <button id="reset-app-btn" class="text-xs font-semibold text-red-400 hover:text-red-500 transition-colors">Reset App Data</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     TOAST
+══════════════════════════════════════════════════════════════ -->
+<div id="toast" class="hidden fixed bottom-20 md:bottom-5 left-1/2 -translate-x-1/2 z-[60]
+     bg-charcoal text-white text-sm font-semibold px-5 py-3 rounded-2xl shadow-xl
+     flex items-center gap-2 pointer-events-none">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toast-msg">Saved!</span>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     SCRIPTS
+══════════════════════════════════════════════════════════════ -->
+<script>
+// ─── Storage keys ───────────────────────────────────────────────
+const PROGRESS_KEY = 'nutriglance_progress'; // { "2026-06-21": { kcal, protein, carbs, fat, fibre, water, notes } }
+const PROFILE_KEY  = 'nutriglance_profile';
+const DARK_KEY     = 'nutriglance_darkmode';
+const MEALS_KEY     = 'nutriglance_meals';   // scanned/logged meals from the dashboard
+const WATER_KEY     = 'nutriglance_water';   // today's hydration count from the dashboard
+
+function dateKeyFrom(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// ─── Derive daily totals from meals logged on the dashboard ─────
+// nutriglance.html stores every scanned/logged meal (kcal, protein, carbs,
+// fibre, loggedAt) in MEALS_KEY. Group those by day so they show up here
+// automatically — no manual "Log Your Day" entry required.
+function loadMealsAsProgress() {
+  let meals = [];
+  try { meals = JSON.parse(localStorage.getItem(MEALS_KEY) || '[]'); } catch { meals = []; }
+
+  const byDate = {};
+  for (const m of meals) {
+    const dt = m.loggedAt ? new Date(m.loggedAt) : null;
+    if (!dt || isNaN(dt)) continue;
+    const k = dateKeyFrom(dt);
+    if (!byDate[k]) byDate[k] = { kcal: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, water: 0, notes: '', source: 'meals' };
+    byDate[k].kcal    += m.kcal    || 0;
+    byDate[k].protein += m.protein || 0;
+    byDate[k].carbs   += m.carbs   || 0;
+    byDate[k].fat     += m.fat     || 0;
+    byDate[k].fibre   += m.fibre   || 0;
+  }
+
+  // Hydration is only ever tracked for "today" on the dashboard (it resets
+  // daily), so attach it to today's entry only.
+  try {
+    const w = JSON.parse(localStorage.getItem(WATER_KEY) || 'null');
+    if (w && w.date === new Date().toDateString()) {
+      const tKey = todayKey();
+      if (byDate[tKey]) byDate[tKey].water = w.count || 0;
+    }
+  } catch {}
+
+  return byDate;
+}
+
+// ─── Helpers ────────────────────────────────────────────────────
+// Merges auto-derived meal totals with manually-logged days. A manual
+// "Log Your Day" entry for a given date always wins for that date (it's a
+// complete, explicit record); otherwise we fall back to meal-derived totals.
+function loadProgress() {
+  let manual = {};
+  try { manual = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}'); } catch { manual = {}; }
+
+  const merged = loadMealsAsProgress();
+  for (const k of Object.keys(manual)) {
+    merged[k] = { ...manual[k], source: 'manual' };
+  }
+  return merged;
+}
+function saveProgress(data) {
+  localStorage.setItem(PROGRESS_KEY, JSON.stringify(data));
+}
+function loadProfile() {
+  try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); } catch { return null; }
+}
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function formatDate(key) {
+  const [y,m,d] = key.split('-');
+  return new Date(y, m-1, d).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+}
+function showToast(msg = 'Saved!') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.remove('hidden');
+  t.classList.add('visible');
+  setTimeout(() => { t.classList.add('hidden'); t.classList.remove('visible'); }, 2500);
+}
+
+// ─── Avatar / profile ───────────────────────────────────────────
+function updateAvatar() {
+  const p = loadProfile();
+  const initial = p?.name ? p.name[0].toUpperCase() : '?';
+  document.getElementById('avatar-initial').textContent = initial;
+  document.getElementById('avatar-initial-mobile').textContent = initial;
+  if (p?.name) document.getElementById('mobile-profile-name').textContent = p.name;
+}
+updateAvatar();
+
+// ─── Today's date label ─────────────────────────────────────────
+document.getElementById('today-date-label').textContent =
+  new Date().toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short' });
+
+// ─── Calorie goal from profile ──────────────────────────────────
+function getGoal() {
+  const p = loadProfile();
+  return p?.targetKcal || 2100;
+}
+function getProteinGoal() { return loadProfile()?.targetProtein || 90; }
+function getCarbsGoal()   { return loadProfile()?.targetCarbs   || 200; }
+function getFatGoal()     { return loadProfile()?.targetFat     || 65; }
+function getFibreGoal()   { return loadProfile()?.targetFiber   || 30; }
+
+// ─── Render today ring ──────────────────────────────────────────
+function renderTodayRing() {
+  const data  = loadProgress();
+  const today = data[todayKey()] || {};
+  const kcal  = today.kcal || 0;
+  const goal  = getGoal();
+  const pct   = Math.min(kcal / goal, 1);
+  const circ  = 364;
+
+  document.getElementById('today-ring-kcal').textContent = kcal;
+  document.getElementById('today-ring-goal').textContent = goal;
+  document.getElementById('today-ring-fill').style.strokeDashoffset = circ - pct * circ;
+
+  // Mini bars
+  const pGoal = getProteinGoal(), cGoal = getCarbsGoal(), fGoal = getFatGoal(), fiGoal = getFibreGoal();
+  document.getElementById('td-protein').textContent = today.protein || 0;
+  document.getElementById('td-carbs').textContent   = today.carbs   || 0;
+  document.getElementById('td-fat').textContent     = today.fat     || 0;
+  document.getElementById('td-fibre').textContent   = today.fibre   || 0;
+  document.getElementById('td-bar-protein').style.width = Math.min((today.protein||0)/pGoal*100,100)+'%';
+  document.getElementById('td-bar-carbs').style.width   = Math.min((today.carbs  ||0)/cGoal*100,100)+'%';
+  document.getElementById('td-bar-fat').style.width     = Math.min((today.fat    ||0)/fGoal*100,100)+'%';
+  document.getElementById('td-bar-fibre').style.width   = Math.min((today.fibre  ||0)/fiGoal*100,100)+'%';
+}
+
+// ─── Stat cards ─────────────────────────────────────────────────
+function renderStats() {
+  const data  = loadProgress();
+  const keys  = Object.keys(data).sort();
+  const goal  = getGoal();
+
+  document.getElementById('stat-days').textContent = keys.length;
+
+  // Streak (consecutive days up to today)
+  let streak = 0;
+  const todayStr = todayKey();
+  let check = new Date();
+  while (true) {
+    const k = `${check.getFullYear()}-${String(check.getMonth()+1).padStart(2,'0')}-${String(check.getDate()).padStart(2,'0')}`;
+    if (data[k] && data[k].kcal) { streak++; check.setDate(check.getDate()-1); } else break;
+  }
+  document.getElementById('stat-streak').textContent = streak;
+
+  // 7-day avg
+  const last7 = keys.slice(-7);
+  if (last7.length) {
+    const avg = Math.round(last7.reduce((s,k) => s + (data[k].kcal||0), 0) / last7.length);
+    document.getElementById('stat-avg-cal').textContent = avg.toLocaleString();
+  }
+
+  // Goal hit rate (within ±10%)
+  if (keys.length) {
+    const hits = keys.filter(k => {
+      const kcal = data[k].kcal || 0;
+      return kcal >= goal * 0.9 && kcal <= goal * 1.1;
+    }).length;
+    document.getElementById('stat-goal-rate').textContent = Math.round(hits/keys.length*100) + '%';
+  }
+}
+
+// ─── Calorie chart ──────────────────────────────────────────────
+let calorieChart = null;
+let macroChart   = null;
+
+function renderCalorieChart(days = 7) {
+  const data  = loadProgress();
+  const goal  = getGoal();
+  const dark  = document.body.classList.contains('dark');
+
+  // Build date array
+  const labels = [], kcalArr = [], goalArr = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    labels.push(d.toLocaleDateString('en-IN', { day:'numeric', month:'short' }));
+    kcalArr.push(data[k]?.kcal || null);
+    goalArr.push(goal);
+  }
+
+  const hasData = kcalArr.some(v => v !== null);
+  document.getElementById('chart-empty').classList.toggle('hidden', hasData);
+  if (!hasData) { if (calorieChart) { calorieChart.destroy(); calorieChart = null; } return; }
+
+  const ctx = document.getElementById('calorie-chart').getContext('2d');
+  if (calorieChart) calorieChart.destroy();
+
+  const gridColor = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  const tickColor = dark ? '#64748B' : '#94A3B8';
+
+  calorieChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Calories',
+          data: kcalArr,
+          backgroundColor: kcalArr.map(v => {
+            if (v === null) return 'transparent';
+            return v >= goal * 0.9 && v <= goal * 1.1 ? '#10B981' : v > goal * 1.1 ? '#F59E0B' : '#6EE7B7';
+          }),
+          borderRadius: 8,
+          borderSkipped: false,
+        },
+        {
+          label: 'Goal',
+          data: goalArr,
+          type: 'line',
+          borderColor: '#0F172A',
+          borderWidth: 2,
+          borderDash: [6, 3],
+          pointRadius: 0,
+          fill: false,
+          tension: 0,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        callbacks: {
+          label: ctx => ctx.dataset.label === 'Goal' ? `Goal: ${ctx.raw} kcal` : `${ctx.raw} kcal`
+        }
+      }},
+      scales: {
+        x: { grid: { display: false }, ticks: { color: tickColor, font: { size: 11 } } },
+        y: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 } }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+function renderMacroChart() {
+  const data = loadProgress();
+  const dark = document.body.classList.contains('dark');
+
+  const labels = [], pArr = [], cArr = [], fArr = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    labels.push(d.toLocaleDateString('en-IN', { day:'numeric', month:'short' }));
+    pArr.push(data[k]?.protein || null);
+    cArr.push(data[k]?.carbs   || null);
+    fArr.push(data[k]?.fat     || null);
+  }
+
+  const hasData = pArr.some(v=>v!==null)||cArr.some(v=>v!==null)||fArr.some(v=>v!==null);
+  document.getElementById('macro-chart-empty').classList.toggle('hidden', hasData);
+  if (!hasData) { if (macroChart) { macroChart.destroy(); macroChart = null; } return; }
+
+  const ctx = document.getElementById('macro-chart').getContext('2d');
+  if (macroChart) macroChart.destroy();
+  const gridColor = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  const tickColor = dark ? '#64748B' : '#94A3B8';
+
+  macroChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label:'Protein', data: pArr, borderColor:'#10B981', backgroundColor:'rgba(16,185,129,0.08)', tension:0.35, pointRadius:4, fill:true },
+        { label:'Carbs',   data: cArr, borderColor:'#6EE7B7', backgroundColor:'rgba(110,231,183,0.08)', tension:0.35, pointRadius:4, fill:true },
+        { label:'Fat',     data: fArr, borderColor:'#F59E0B', backgroundColor:'rgba(245,158,11,0.08)', tension:0.35, pointRadius:4, fill:true },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position:'bottom', labels:{ boxWidth:10, font:{size:11}, color: tickColor } }},
+      scales: {
+        x: { grid:{ display:false }, ticks:{ color:tickColor, font:{size:11} } },
+        y: { grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:11} }, beginAtZero:true }
+      }
+    }
+  });
+}
+
+// ─── Calendar heatmap ───────────────────────────────────────────
+function renderCalendar() {
+  const data  = loadProgress();
+  const goal  = getGoal();
+  const grid  = document.getElementById('calendar-grid');
+  grid.innerHTML = '';
+
+  const now   = new Date();
+  const year  = now.getFullYear();
+  const month = now.getMonth();
+  const days  = new Date(year, month+1, 0).getDate();
+  const firstDow = new Date(year, month, 1).getDay(); // 0=Sun
+
+  // Day-of-week headers
+  ['S','M','T','W','T','F','S'].forEach(h => {
+    const el = document.createElement('div');
+    el.className = 'text-center text-[10px] font-semibold text-muted pb-1';
+    el.textContent = h;
+    grid.appendChild(el);
+  });
+
+  // Blank cells
+  for (let i = 0; i < firstDow; i++) {
+    const el = document.createElement('div'); grid.appendChild(el);
+  }
+
+  for (let d = 1; d <= days; d++) {
+    const k   = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const entry = data[k];
+    const el  = document.createElement('div');
+    el.className = 'cal-day w-full aspect-square rounded-md flex items-center justify-center text-[10px] font-semibold cursor-default';
+    el.title = entry ? `${formatDate(k)}: ${entry.kcal||0} kcal` : formatDate(k);
+
+    if (!entry || !entry.kcal) {
+      el.classList.add(...(d <= now.getDate() ? 'bg-slate-100 text-muted' : 'bg-slate-50 text-slate-300').split(' '));
+    } else if (entry.kcal >= goal * 0.9 && entry.kcal <= goal * 1.1) {
+      el.classList.add('bg-brand', 'text-white');
+    } else if (entry.kcal > goal * 1.1) {
+      el.classList.add('bg-amber-400', 'text-white');
+    } else {
+      el.classList.add('bg-emerald-200', 'text-emerald-800');
+    }
+    el.textContent = d;
+    grid.appendChild(el);
+  }
+}
+
+// ─── History table ──────────────────────────────────────────────
+function renderHistory() {
+  const data  = loadProgress();
+  const keys  = Object.keys(data).sort().reverse();
+  const empty = document.getElementById('history-empty');
+  const table = document.getElementById('history-table');
+  const rows  = document.getElementById('history-rows');
+  const clearBtn = document.getElementById('clear-all-btn');
+
+  if (!keys.length) {
+    empty.classList.remove('hidden'); table.classList.add('hidden'); clearBtn.classList.add('hidden'); return;
+  }
+  empty.classList.add('hidden'); table.classList.remove('hidden'); clearBtn.classList.remove('hidden');
+
+  rows.innerHTML = '';
+  keys.forEach(k => {
+    const e = data[k];
+    const goal = getGoal();
+    const pct  = e.kcal ? Math.round(e.kcal/goal*100) : 0;
+    const color = e.kcal >= goal*0.9 && e.kcal <= goal*1.1 ? 'text-brand' : e.kcal > goal*1.1 ? 'text-amber-500' : 'text-muted';
+
+    const row = document.createElement('div');
+    row.className = 'grid grid-cols-6 py-2.5 px-1 text-sm hover:bg-slate-50 rounded-lg transition-colors fade-in';
+    const badge = e.source === 'manual'
+      ? '<span class="text-[9px] font-semibold uppercase tracking-wide text-muted/70 ml-1.5 align-middle">manual</span>'
+      : '<span class="text-[9px] font-semibold uppercase tracking-wide text-brand/70 ml-1.5 align-middle">scanned</span>';
+    row.innerHTML = `
+      <span class="col-span-2 font-medium text-charcoal">${formatDate(k)}
+        <span class="text-xs ${color} ml-1">${pct ? pct+'%' : ''}</span>${badge}
+      </span>
+      <span class="text-right font-semibold ${color}">${e.kcal||'—'}</span>
+      <span class="text-right text-muted">${e.protein!=null?e.protein+'g':'—'}</span>
+      <span class="text-right text-muted">${e.carbs  !=null?e.carbs  +'g':'—'}</span>
+      <span class="text-right text-muted">${e.fat    !=null?e.fat    +'g':'—'}</span>
+    `;
+    rows.appendChild(row);
+  });
+}
+
+// ─── Full render ────────────────────────────────────────────────
+let currentRange = 7;
+function renderAll() {
+  renderTodayRing();
+  renderStats();
+  renderCalorieChart(currentRange);
+  renderMacroChart();
+  renderCalendar();
+  renderHistory();
+}
+renderAll();
+
+// ─── Range buttons ──────────────────────────────────────────────
+document.querySelectorAll('.range-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    currentRange = parseInt(btn.dataset.range);
+    document.querySelectorAll('.range-btn').forEach(b => {
+      b.classList.toggle('bg-brand', b === btn);
+      b.classList.toggle('text-white', b === btn);
+      b.classList.toggle('bg-slate-100', b !== btn);
+      b.classList.toggle('text-muted', b !== btn);
+    });
+    renderCalorieChart(currentRange);
+  });
+});
+
+// ─── Log modal ──────────────────────────────────────────────────
+const logModal = document.getElementById('log-modal');
+
+function openLogModal() {
+  // Pre-fill date with today
+  document.getElementById('log-date').value = todayKey();
+  // Pre-fill existing entry if present
+  const data  = loadProgress();
+  const today = data[todayKey()] || {};
+  document.getElementById('log-cal').value     = today.kcal    || '';
+  document.getElementById('log-protein').value = today.protein != null ? today.protein : '';
+  document.getElementById('log-carbs').value   = today.carbs   != null ? today.carbs   : '';
+  document.getElementById('log-fat').value     = today.fat     != null ? today.fat     : '';
+  document.getElementById('log-fibre').value   = today.fibre   != null ? today.fibre   : '';
+  document.getElementById('log-water').value   = today.water   != null ? today.water   : '';
+  document.getElementById('log-notes').value   = today.notes   || '';
+  document.getElementById('log-error').classList.add('hidden');
+  logModal.classList.remove('hidden');
+  document.body.classList.add('overflow-hidden');
+}
+function closeLogModal() {
+  logModal.style.opacity = '0';
+  setTimeout(() => {
+    logModal.classList.add('hidden');
+    logModal.style.opacity = '';
+    document.body.classList.remove('overflow-hidden');
+  }, 250);
+}
+
+document.getElementById('open-log-btn').addEventListener('click', openLogModal);
+document.getElementById('open-log-btn-2').addEventListener('click', openLogModal);
+document.getElementById('log-modal-close').addEventListener('click', closeLogModal);
+document.getElementById('log-cancel-btn').addEventListener('click', closeLogModal);
+logModal.addEventListener('click', e => { if (e.target === logModal) closeLogModal(); });
+
+document.getElementById('log-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const dateVal = document.getElementById('log-date').value;
+  const calVal  = document.getElementById('log-cal').value;
+  if (!dateVal) {
+    const err = document.getElementById('log-error');
+    err.textContent = 'Please select a date.'; err.classList.remove('hidden'); return;
+  }
+  if (!calVal) {
+    const err = document.getElementById('log-error');
+    err.textContent = 'Please enter calories.'; err.classList.remove('hidden'); return;
+  }
+
+  const data = loadProgress();
+  data[dateVal] = {
+    kcal:    parseFloat(calVal) || 0,
+    protein: parseFloat(document.getElementById('log-protein').value) || 0,
+    carbs:   parseFloat(document.getElementById('log-carbs').value)   || 0,
+    fat:     parseFloat(document.getElementById('log-fat').value)     || 0,
+    fibre:   parseFloat(document.getElementById('log-fibre').value)   || 0,
+    water:   parseFloat(document.getElementById('log-water').value)   || 0,
+    notes:   document.getElementById('log-notes').value.trim(),
+  };
+  saveProgress(data);
+  closeLogModal();
+  renderAll();
+  showToast('Entry saved! 🎉');
+});
+
+// ─── Clear all ──────────────────────────────────────────────────
+document.getElementById('clear-all-btn').addEventListener('click', () => {
+  if (confirm('Delete all manually-logged entries? This cannot be undone. (Days tracked automatically from your scanned meals on the Dashboard will still appear — clear those from the Dashboard instead.)')) {
+    localStorage.removeItem(PROGRESS_KEY);
+    renderAll();
+    showToast('Manual entries cleared.');
+  }
+});
+
+// ─── Settings modal ─────────────────────────────────────────────
+const settingsModal = document.getElementById('settings-modal');
+function openSettings() { settingsModal.classList.remove('hidden'); document.body.classList.add('overflow-hidden'); }
+function closeSettings() {
+  settingsModal.style.opacity='0';
+  setTimeout(()=>{ settingsModal.classList.add('hidden'); settingsModal.style.opacity=''; document.body.classList.remove('overflow-hidden'); },250);
+}
+document.getElementById('settings-nav-btn').addEventListener('click', openSettings);
+document.getElementById('settings-btn-mobile').addEventListener('click', () => {
+  document.getElementById('mobile-menu').classList.remove('open');
+  document.getElementById('hamburger').setAttribute('aria-expanded','false');
+  document.body.classList.remove('menu-open');
+  openSettings();
+});
+document.getElementById('settings-btn-bottom').addEventListener('click', openSettings);
+document.getElementById('settings-modal-close').addEventListener('click', closeSettings);
+settingsModal.addEventListener('click', e => { if (e.target===settingsModal) closeSettings(); });
+
+// ─── Dark mode ──────────────────────────────────────────────────
+const toggle = document.getElementById('dark-mode-toggle');
+const thumb  = document.getElementById('dark-mode-thumb');
+function applyDark(on) {
+  document.body.classList.toggle('dark', on);
+  toggle.setAttribute('aria-checked', String(on));
+  toggle.classList.toggle('bg-brand', on);
+  toggle.classList.toggle('bg-slate-200', !on);
+  thumb.classList.toggle('translate-x-5', on);
+  thumb.classList.toggle('translate-x-0.5', !on);
+  localStorage.setItem(DARK_KEY, on ? '1' : '0');
+  // Re-render charts for dark mode colours
+  renderCalorieChart(currentRange);
+  renderMacroChart();
+}
+applyDark(localStorage.getItem(DARK_KEY) === '1');
+toggle.addEventListener('click', () => applyDark(!document.body.classList.contains('dark')));
+
+// ─── Notifications toggle ───────────────────────────────────────
+const notifToggle = document.getElementById('notif-toggle');
+const notifThumb  = document.getElementById('notif-thumb');
+let notifOn = true;
+notifToggle.addEventListener('click', () => {
+  notifOn = !notifOn;
+  notifToggle.setAttribute('aria-checked', String(notifOn));
+  notifToggle.classList.toggle('bg-brand', notifOn);
+  notifToggle.classList.toggle('bg-slate-200', !notifOn);
+  notifThumb.classList.toggle('translate-x-5', notifOn);
+  notifThumb.classList.toggle('translate-x-0.5', !notifOn);
+});
+
+// ─── Reset ──────────────────────────────────────────────────────
+document.getElementById('reset-app-btn').addEventListener('click', () => {
+  if (confirm('This will clear your profile, meals, and all saved data. Are you sure?')) {
+    localStorage.clear(); location.reload();
+  }
+});
+
+// ─── Hamburger ──────────────────────────────────────────────────
+const hamburger  = document.getElementById('hamburger');
+const mobileMenu = document.getElementById('mobile-menu');
+hamburger.addEventListener('click', () => {
+  const isOpen = mobileMenu.classList.toggle('open');
+  hamburger.setAttribute('aria-expanded', isOpen);
+  document.body.classList.toggle('menu-open', isOpen);
+});
+mobileMenu.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
+  mobileMenu.classList.remove('open');
+  hamburger.setAttribute('aria-expanded','false');
+  document.body.classList.remove('menu-open');
+}));
+document.addEventListener('click', e => {
+  if (!hamburger.contains(e.target) && !mobileMenu.contains(e.target)) {
+    mobileMenu.classList.remove('open');
+    hamburger.setAttribute('aria-expanded','false');
+    document.body.classList.remove('menu-open');
+  }
+});
+
+// Bottom nav: highlight active link on click
+document.querySelectorAll('.bottom-nav-link').forEach(link => {
+  link.addEventListener('click', (e) => {
+    document.querySelectorAll('.bottom-nav-link').forEach(l => l.classList.remove('active'));
+    e.currentTarget.classList.add('active');
+  });
+});
+</script>
+
+</body>
+</html>
