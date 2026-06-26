@@ -130,6 +130,8 @@
     body.dark #settings-modal .bg-card  { background-color: #1E293B !important; }
     body.dark #settings-modal .bg-slate-100 { background-color: #273549 !important; }
   </style>
+  <!-- Firebase auth guard -->
+  <script type="module" src="firebase-auth.js"></script>
 </head>
 
 <body class="bg-bg min-h-screen font-body text-charcoal flex flex-col">
@@ -635,11 +637,11 @@
 ══════════════════════════════════════════════════════════════ -->
 <script>
 // ─── Storage keys ───────────────────────────────────────────────
-const PROGRESS_KEY = 'nutriglance_progress'; // { "2026-06-21": { kcal, protein, carbs, fat, fibre, water, notes } }
+
 const PROFILE_KEY  = 'nutriglance_profile';
 const DARK_KEY     = 'nutriglance_darkmode';
-const MEALS_KEY     = 'nutriglance_meals';   // scanned/logged meals from the dashboard
-const WATER_KEY     = 'nutriglance_water';   // today's hydration count from the dashboard
+
+
 
 function dateKeyFrom(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -651,7 +653,7 @@ function dateKeyFrom(d) {
 // automatically — no manual "Log Your Day" entry required.
 function loadMealsAsProgress() {
   let meals = [];
-  try { meals = JSON.parse(localStorage.getItem(MEALS_KEY) || '[]'); } catch { meals = []; }
+  meals = NG.store.get('meals', []);
 
   const byDate = {};
   for (const m of meals) {
@@ -669,7 +671,7 @@ function loadMealsAsProgress() {
   // Hydration is only ever tracked for "today" on the dashboard (it resets
   // daily), so attach it to today's entry only.
   try {
-    const w = JSON.parse(localStorage.getItem(WATER_KEY) || 'null');
+    const w = NG.store.get('water', null);
     if (w && w.date === new Date().toDateString()) {
       const tKey = todayKey();
       if (byDate[tKey]) byDate[tKey].water = w.count || 0;
@@ -685,7 +687,7 @@ function loadMealsAsProgress() {
 // complete, explicit record); otherwise we fall back to meal-derived totals.
 function loadProgress() {
   let manual = {};
-  try { manual = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}'); } catch { manual = {}; }
+  manual = NG.store.get('progress', {});
 
   const merged = loadMealsAsProgress();
   for (const k of Object.keys(manual)) {
@@ -694,10 +696,10 @@ function loadProgress() {
   return merged;
 }
 function saveProgress(data) {
-  localStorage.setItem(PROGRESS_KEY, JSON.stringify(data));
+  NG.store.set('progress', data);
 }
 function loadProfile() {
-  try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); } catch { return null; }
+  return NG.store.get('profile', null);
 }
 function todayKey() {
   const d = new Date();
@@ -1011,7 +1013,7 @@ function renderAll() {
   renderCalendar();
   renderHistory();
 }
-renderAll();
+// renderAll() is called in waitForNG below
 
 // ─── Range buttons ──────────────────────────────────────────────
 document.querySelectorAll('.range-btn').forEach(btn => {
@@ -1094,7 +1096,7 @@ document.getElementById('log-form').addEventListener('submit', e => {
 // ─── Clear all ──────────────────────────────────────────────────
 document.getElementById('clear-all-btn').addEventListener('click', () => {
   if (confirm('Delete all manually-logged entries? This cannot be undone. (Days tracked automatically from your scanned meals on the Dashboard will still appear — clear those from the Dashboard instead.)')) {
-    localStorage.removeItem(PROGRESS_KEY);
+    NG.store.remove('progress');
     renderAll();
     showToast('Manual entries cleared.');
   }
@@ -1134,6 +1136,23 @@ function applyDark(on) {
   renderMacroChart();
 }
 applyDark(localStorage.getItem(DARK_KEY) === '1');
+
+// Wait for Firebase auth
+(function waitForNG() {
+  if (window.NG?.ready) {
+    NG.ready(user => {
+      const p = typeof loadProfile === 'function' ? loadProfile() : null;
+      const name = p?.name || user.displayName || '';
+      ['avatar-initial','avatar-initial-mobile'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && name) el.textContent = name[0].toUpperCase();
+      });
+      const pname = document.getElementById('mobile-profile-name');
+      if (pname && name) pname.textContent = name;
+      renderAll();
+    });
+  } else { setTimeout(waitForNG, 50); }
+})();
 toggle.addEventListener('click', () => applyDark(!document.body.classList.contains('dark')));
 
 // ─── Notifications toggle ───────────────────────────────────────
@@ -1152,7 +1171,7 @@ notifToggle.addEventListener('click', () => {
 // ─── Reset ──────────────────────────────────────────────────────
 document.getElementById('reset-app-btn').addEventListener('click', () => {
   if (confirm('This will clear your profile, meals, and all saved data. Are you sure?')) {
-    localStorage.clear(); location.reload();
+    NG.store.clearUser(); location.reload();
   }
 });
 

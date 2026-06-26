@@ -159,6 +159,8 @@
       .chat-msg, .typing-dot { animation: none !important; }
     }
   </style>
+  <!-- Firebase auth guard -->
+  <script type="module" src="firebase-auth.js"></script>
 </head>
 
 <body class="bg-bg min-h-screen font-body text-charcoal flex flex-col">
@@ -721,11 +723,11 @@
   ════════════════════════════════════════════════════════════════ -->
   <script>
     // ── Profile helpers (shared with nutriglance.html via localStorage) ──
-    const PROFILE_KEY = 'nutriglance_profile';
+    
     function loadProfile() {
-      try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); } catch { return null; }
+      return NG.store.get('profile', null);
     }
-    function saveProfile(p) { localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }
+    function saveProfile(p) { NG.store.set('profile', p); }
 
     function getInitial(name) { return name ? name.trim()[0].toUpperCase() : '?'; }
 
@@ -883,6 +885,19 @@
     // Load saved preference
     applyDark(localStorage.getItem(DARK_KEY) === '1');
 
+    // Wait for Firebase auth then update avatars
+    (function waitForNG() {
+      if (window.NG?.ready) {
+        NG.ready(user => {
+          const p = loadProfile ? loadProfile() : null;
+          const name = p?.name || user.displayName || '';
+          if (name) {
+            updateAvatars();
+          }
+        });
+      } else { setTimeout(waitForNG, 50); }
+    })();
+
     toggle.addEventListener('click', () => {
       applyDark(!document.body.classList.contains('dark'));
     });
@@ -903,7 +918,7 @@
     // ── Reset app data ──
     document.getElementById('reset-app-btn').addEventListener('click', () => {
       if (confirm('This will clear your profile, meals, and all saved data. Are you sure?')) {
-        localStorage.clear();
+        NG.store.clearUser();
         location.reload();
       }
     });

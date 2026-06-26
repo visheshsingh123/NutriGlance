@@ -139,6 +139,8 @@
       .fade-in, .skeleton { animation: none !important; }
     }
   </style>
+  <!-- Firebase auth guard -->
+  <script type="module" src="firebase-auth.js"></script>
 </head>
 
 <body class="bg-bg min-h-screen font-body text-charcoal flex flex-col">
@@ -515,14 +517,14 @@
 ══════════════════════════════════════════════════════════════ -->
 <script>
 // ─── Storage keys (shared with Dashboard & Progress) ─────────────
-const MEALS_KEY   = 'nutriglance_meals';
-const PROFILE_KEY = 'nutriglance_profile';
+
+
 const DARK_KEY     = 'nutriglance_darkmode';
 
 const GOALS = { kcal: 2100, protein: 90, carbs: 200, fat: 70 };
 
 function loadProfile() {
-  try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); } catch { return null; }
+  return NG.store.get('profile', null);
 }
 const profile = loadProfile();
 if (profile) {
@@ -533,9 +535,9 @@ if (profile) {
 }
 
 function loadMeals() {
-  try { return JSON.parse(localStorage.getItem(MEALS_KEY) || '[]'); } catch { return []; }
+  return NG.store.get('meals', []);
 }
-function saveMeals(meals) { localStorage.setItem(MEALS_KEY, JSON.stringify(meals)); }
+function saveMeals(meals) { NG.store.set('meals', meals); }
 
 /** Tiny XSS guard */
 function escapeHtml(str) {
@@ -747,7 +749,7 @@ sortSelect.addEventListener('change', renderHistory);
 
 clearAllBtn.addEventListener('click', () => {
   if (!confirm('Delete all logged meals? This cannot be undone.')) return;
-  localStorage.removeItem(MEALS_KEY);
+  NG.store.remove('meals');
   refreshAll();
   showToast('Meal history cleared.');
 });
@@ -761,7 +763,6 @@ function updateAvatars() {
   document.getElementById('avatar-initial-mobile').textContent = initial;
   document.getElementById('mobile-profile-name').textContent = p?.name || 'Profile';
 }
-updateAvatars();
 
 // ─── Settings modal ─────────────────────────────────────────────
 const settingsModal = document.getElementById('settings-modal');
@@ -794,6 +795,24 @@ function applyDark(on) {
   localStorage.setItem(DARK_KEY, on ? '1' : '0');
 }
 applyDark(localStorage.getItem(DARK_KEY) === '1');
+
+// Wait for Firebase auth then boot
+(function waitForNG() {
+  if (window.NG?.ready) {
+    NG.ready(user => {
+      // Show Firebase name if no profile saved
+      const p = loadProfile();
+      const name = p?.name || user.displayName || '';
+      if (name) {
+        document.getElementById('avatar-initial').textContent = name[0].toUpperCase();
+        document.getElementById('avatar-initial-mobile').textContent = name[0].toUpperCase();
+        document.getElementById('mobile-profile-name').textContent = name;
+      }
+      refreshAll();
+    });
+  } else { setTimeout(waitForNG, 50); }
+})();
+// Remove standalone updateAvatars call (handled above)
 dmToggle.addEventListener('click', () => applyDark(!document.body.classList.contains('dark')));
 
 // ─── Notifications toggle ───────────────────────────────────────
@@ -812,7 +831,7 @@ notifToggle.addEventListener('click', () => {
 // ─── Reset ──────────────────────────────────────────────────────
 document.getElementById('reset-app-btn').addEventListener('click', () => {
   if (confirm('This will clear your profile, meals, and all saved data. Are you sure?')) {
-    localStorage.clear(); location.reload();
+    NG.store.clearUser(); location.reload();
   }
 });
 
