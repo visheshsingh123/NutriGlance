@@ -159,8 +159,6 @@
       .chat-msg, .typing-dot { animation: none !important; }
     }
   </style>
-  <!-- Firebase auth guard -->
-  <script type="module" src="firebase-auth.js"></script>
 </head>
 
 <body class="bg-bg min-h-screen font-body text-charcoal flex flex-col">
@@ -709,25 +707,9 @@
         </div>
 
         <!-- App version -->
-        <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
+        <div class="px-6 py-4 flex items-center justify-between">
           <p class="text-xs text-muted">NutriGlance v1.0.0</p>
           <button id="reset-app-btn" class="text-xs font-semibold text-red-400 hover:text-red-500 transition-colors">Reset App Data</button>
-        </div>
-
-        <!-- Sign Out -->
-        <div class="px-6 pb-6">
-          <button id="signout-btn"
-            class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl
-                   border border-red-200 text-red-500 text-sm font-semibold
-                   hover:bg-red-50 active:scale-95 transition-all duration-150">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16 17 21 12 16 7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-            Sign Out
-          </button>
         </div>
 
       </div>
@@ -739,11 +721,11 @@
   ════════════════════════════════════════════════════════════════ -->
   <script>
     // ── Profile helpers (shared with nutriglance.html via localStorage) ──
-    
+    const PROFILE_KEY = 'nutriglance_profile';
     function loadProfile() {
-      return NG.store.get('profile', null);
+      try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); } catch { return null; }
     }
-    function saveProfile(p) { NG.store.set('profile', p); }
+    function saveProfile(p) { localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }
 
     function getInitial(name) { return name ? name.trim()[0].toUpperCase() : '?'; }
 
@@ -901,19 +883,6 @@
     // Load saved preference
     applyDark(localStorage.getItem(DARK_KEY) === '1');
 
-    // Wait for Firebase auth then update avatars
-    (function waitForNG() {
-      if (window.NG?.ready) {
-        NG.ready(user => {
-          const p = loadProfile ? loadProfile() : null;
-          const name = p?.name || user.displayName || '';
-          if (name) {
-            updateAvatars();
-          }
-        });
-      } else { setTimeout(waitForNG, 50); }
-    })();
-
     toggle.addEventListener('click', () => {
       applyDark(!document.body.classList.contains('dark'));
     });
@@ -934,15 +903,10 @@
     // ── Reset app data ──
     document.getElementById('reset-app-btn').addEventListener('click', () => {
       if (confirm('This will clear your profile, meals, and all saved data. Are you sure?')) {
-        NG.store.clearUser();
+        localStorage.clear();
         location.reload();
       }
     });
-    // ── Sign Out button in settings ──
-    document.getElementById('signout-btn')?.addEventListener('click', () => {
-      if (confirm('Sign out of NutriGlance?')) NG.signOut();
-    });
-
 
     // Bottom nav: highlight active link on click
     document.querySelectorAll('.bottom-nav-link').forEach(link => {

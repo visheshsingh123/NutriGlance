@@ -262,6 +262,24 @@
     </div>
   </div>
 
+  <script>
+    // Runs immediately, before the rest of the page's content or scripts —
+    // shows the onboarding overlay instantly with no flash if (and only if)
+    // no profile has been saved to localStorage yet.
+    (function () {
+      let hasProfile = false;
+      try {
+        hasProfile = !!JSON.parse(localStorage.getItem('nutriglance_profile') || 'null');
+      } catch {
+        hasProfile = false;
+      }
+      if (!hasProfile) {
+        document.getElementById('onboarding-overlay').classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+      }
+    })();
+  </script>
+
   <!-- ════════════════════════════════════════════════════════════════
        NAVBAR
   ════════════════════════════════════════════════════════════════ -->
@@ -347,10 +365,6 @@
             <p class="text-sm font-semibold text-charcoal" id="mobile-profile-name">Alex</p>
             <p class="text-xs text-charcoal/60">Tap avatar to edit profile</p>
           </div>
-          <button onclick="(function(){if(window.NG?.signOut)NG.signOut();})()"
-                  class="ml-auto text-xs font-semibold text-red-400 hover:text-red-600 transition-colors px-2 py-1 rounded-lg hover:bg-red-50">
-            Sign Out
-          </button>
         </div>
       </div>
     </div><!-- /mobile-menu -->
@@ -940,25 +954,9 @@
         </div>
 
         <!-- App version + reset -->
-        <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
+        <div class="px-6 py-4 flex items-center justify-between">
           <p class="text-xs text-muted">NutriGlance v1.0.0</p>
           <button id="reset-app-btn" class="text-xs font-semibold text-red-400 hover:text-red-500 transition-colors">Reset App Data</button>
-        </div>
-
-        <!-- Sign Out -->
-        <div class="px-6 pb-6">
-          <button id="signout-btn"
-            class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl
-                   border border-red-200 text-red-500 text-sm font-semibold
-                   hover:bg-red-50 active:scale-95 transition-all duration-150">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16 17 21 12 16 7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-            Sign Out
-          </button>
         </div>
 
       </div>
@@ -980,9 +978,6 @@
   </div>
 
 
-  <!-- Firebase auth guard (module) -->
-  <script type="module" src="firebase-auth.js"></script>
-
   <!-- ════════════════════════════════════════════════════════════════
        JAVASCRIPT — App Logic
   ════════════════════════════════════════════════════════════════ -->
@@ -998,18 +993,46 @@
     };
 
     // ──────────────────────────────────────────────────────────────────
-    // PROFILE helpers (now per-user via NG.store)
+    // PROFILE — onboarding inputs + calculated targets
     // ──────────────────────────────────────────────────────────────────
-    function loadProfile()        { return NG.store.get('profile', null); }
-    function saveProfile(profile) { NG.store.set('profile', profile); }
+    const PROFILE_KEY = 'nutriglance_profile';
+
+    function loadProfile() {
+      try {
+        const raw = localStorage.getItem(PROFILE_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch {
+        return null;
+      }
+    }
+
+    function saveProfile(profile) {
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    }
+
+    // If a profile already exists, override the hardcoded defaults above
+    // with the user's personalised targets before anything renders.
+    const savedProfile = loadProfile();
+    if (savedProfile) {
+      GOALS.kcal    = savedProfile.targetKcal;
+      GOALS.protein = savedProfile.targetProtein;
+      GOALS.carbs   = savedProfile.targetCarbs;
+      // targetFat is the current key; fall back to targetFiber for profiles
+      // saved before the fibre→fat rename so existing users don't lose their goal
+      GOALS.fat     = savedProfile.targetFat ?? savedProfile.targetFiber ?? GOALS.fat;
+    }
 
     // Keeps the "/ 90g" style goal labels in the macro card in sync with GOALS
     function syncGoalLabels() {
       document.getElementById('macro-protein-goal').textContent = GOALS.protein;
       document.getElementById('macro-carbs-goal').textContent   = GOALS.carbs;
-      document.getElementById('macro-fat-goal').textContent     = GOALS.fat;
+      document.getElementById('macro-fat-goal').textContent   = GOALS.fat;
       document.getElementById('ring-label-goal').textContent    = GOALS.kcal;
     }
+    syncGoalLabels();
+
+    // Storage key
+    const STORAGE_KEY = 'nutriglance_meals';
 
     // ──────────────────────────────────────────────────────────────────
     // MOCK FOOD DATABASE
@@ -1027,12 +1050,36 @@
       { name: 'Boiled Eggs & Whole Wheat Toast', kcal: 290, protein: 18, carbs: 26, fat: 9  },
       { name: 'Fruit & Nut Smoothie Bowl', kcal: 310, protein: 10, carbs: 50, fat: 10 },
     ];
-    // STATE — per-user store
-    function loadAllMeals() { return NG.store.get("meals", []); }
-    function saveMeals(meals) { NG.store.set("meals", meals); }
+
+    // ──────────────────────────────────────────────────────────────────
+    // STATE — load from localStorage or start fresh
+    // ──────────────────────────────────────────────────────────────────
     function loadMeals() {
-      const todayStr = new Date().toDateString();
-      return loadAllMeals().filter(m => m.loggedAt && new Date(m.loggedAt).toDateString() === todayStr);
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const all = raw ? JSON.parse(raw) : [];
+        // Dashboard only shows today's meals; meals.html / progress.html show all history
+        const todayStr = new Date().toDateString();
+        return all.filter(m => {
+          if (!m.loggedAt) return false;
+          return new Date(m.loggedAt).toDateString() === todayStr;
+        });
+      } catch {
+        return [];
+      }
+    }
+
+    function loadAllMeals() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveMeals(meals) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(meals));
     }
 
     // Compute totals purely from stored meals — starts at zero
@@ -1390,6 +1437,9 @@
       document.getElementById('avatar-initial-mobile').textContent = initial;
       document.getElementById('mobile-profile-name').textContent = displayName;
     }
+
+    // Run on page load
+    updateAvatars();
 
     // ──────────────────────────────────────────────────────────────────
     // PROFILE EDIT MODAL
@@ -1818,15 +1868,24 @@ Scale kcal, protein, carbs and fat to match the piece count or volume you identi
     // ──────────────────────────────────────────────────────────────────
     // HYDRATION TRACKER
     // ──────────────────────────────────────────────────────────────────
+    const WATER_KEY = 'nutriglance_water';
+
     function loadWater() {
-      const data = NG.store.get('water', { count: 0, date: '' });
-      const today = new Date().toDateString();
-      if (data.date !== today) return { count: 0, date: today };
-      return data;
+      try {
+        const raw = localStorage.getItem(WATER_KEY);
+        const data = raw ? JSON.parse(raw) : { count: 0, date: '' };
+        // Reset if it's a new day
+        const today = new Date().toDateString();
+        if (data.date !== today) return { count: 0, date: today };
+        return data;
+      } catch { return { count: 0, date: new Date().toDateString() }; }
     }
 
     function saveWater(count) {
-      NG.store.set('water', { count, date: new Date().toDateString() });
+      localStorage.setItem(WATER_KEY, JSON.stringify({
+        count,
+        date: new Date().toDateString(),
+      }));
     }
 
     function renderWater() {
@@ -1882,47 +1941,11 @@ Scale kcal, protein, carbs and fat to match the piece count or volume you identi
     }
 
     // ──────────────────────────────────────────────────────────────────
-    // INITIAL RENDER — wait for Firebase auth, then boot
+    // INITIAL RENDER on page load
     // ──────────────────────────────────────────────────────────────────
-    function boot() {
-      // Show Firebase display name in avatar if no saved profile yet
-      const profile = loadProfile();
-      if (!profile && NG.user?.displayName) {
-        const n = NG.user.displayName;
-        document.getElementById('avatar-initial').textContent = n.charAt(0).toUpperCase();
-        document.getElementById('avatar-initial-mobile').textContent = n.charAt(0).toUpperCase();
-        document.getElementById('mobile-profile-name').textContent = n;
-      }
-
-      // Apply saved goals
-      const savedProfile = loadProfile();
-      if (savedProfile) {
-        GOALS.kcal    = savedProfile.targetKcal;
-        GOALS.protein = savedProfile.targetProtein;
-        GOALS.carbs   = savedProfile.targetCarbs;
-        GOALS.fat     = savedProfile.targetFat ?? savedProfile.targetFiber ?? GOALS.fat;
-      }
-      syncGoalLabels();
-
-      // Show/hide onboarding
-      if (!savedProfile) {
-        document.getElementById('onboarding-overlay').classList.remove('hidden');
-        document.body.classList.add('overflow-hidden');
-      }
-
-      refresh();
-      renderWater();
-      renderTip();
-    }
-
-    // NG is set by firebase-auth.js module; poll briefly until ready
-    (function waitForNG() {
-      if (window.NG?.ready) {
-        NG.ready(boot);
-      } else {
-        setTimeout(waitForNG, 50);
-      }
-    })();
+    refresh();
+    renderWater();
+    renderTip();
 
   </script>
 
@@ -1970,7 +1993,7 @@ Scale kcal, protein, carbs and fat to match the piece count or volume you identi
       dmToggle.classList.toggle('bg-slate-200', !on);
       dmThumb.classList.toggle('translate-x-5', on);
       dmThumb.classList.toggle('translate-x-0.5', !on);
-      localStorage.setItem(DARK_KEY, on ? '1' : '0'); // dark mode is device-level, not per-user
+      localStorage.setItem(DARK_KEY, on ? '1' : '0');
     }
     applyDark(localStorage.getItem(DARK_KEY) === '1');
     if (localStorage.getItem(DARK_KEY) === '1') refresh();
@@ -1992,15 +2015,10 @@ Scale kcal, protein, carbs and fat to match the piece count or volume you identi
     // ── Reset app data ──
     document.getElementById('reset-app-btn').addEventListener('click', () => {
       if (confirm('This will clear your profile, meals, and all saved data. Are you sure?')) {
-        NG.store.clearUser();
+        localStorage.clear();
         location.reload();
       }
     });
-    // ── Sign Out button in settings ──
-    document.getElementById('signout-btn')?.addEventListener('click', () => {
-      if (confirm('Sign out of NutriGlance?')) NG.signOut();
-    });
-
   </script>
 
   <!-- ════════════════════════════════════════════════════════════════
