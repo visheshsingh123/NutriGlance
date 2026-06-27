@@ -691,10 +691,14 @@ document.querySelectorAll('.bottom-nav-link').forEach(link => {
 refreshAll();
 </script>
 
-  <!-- Firebase SDKs & Auth protection -->
+  <!-- Firebase SDKs, Auth protection & Firestore data sync -->
   <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-    import { getAuth }       from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getAuth }         from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import {
+      getFirestore, doc, getDoc, setDoc,
+      collection, getDocs, writeBatch
+    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
     const firebaseConfig = {
       apiKey:            'AIzaSyDKwXd1HXx0oNriqUOfiP4FOHmNc9L1jbA',
@@ -706,26 +710,76 @@ refreshAll();
       measurementId:     'G-C0B269SQFP',
     };
 
-    const app = initializeApp(firebaseConfig);
+    const app  = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db   = getFirestore(app);
 
-    auth.onAuthStateChanged(user => {
-      if (!user) {
-        window.location.href = 'login.html';
-      } else {
-        const PROFILE_KEY = 'nutriglance_profile';
-        let p = null;
-        try { p = JSON.parse(localStorage.getItem(PROFILE_KEY)); } catch (e) {}
-        if (!p || !p.name) {
-          const name = user.displayName || user.email.split('@')[0];
-          const newProfile = { name: name, gender: 'male', age: 28, weight: 68, height: 172, targetKcal: 2100, targetProtein: 90, targetFat: 70, targetCarbs: 200 };
-          localStorage.setItem(PROFILE_KEY, JSON.stringify(newProfile));
-          if (typeof window.updateAvatars === 'function') window.updateAvatars();
-          if (typeof window.refreshAll === 'function') window.refreshAll();
+    let _uid = null;
+
+    // Load all meals from Firestore and cache to localStorage
+    async function loadMealsFromFirestore(uid) {
+      try {
+        const snap = await getDocs(collection(db, 'users', uid, 'meals'));
+        const meals = [];
+        snap.forEach(d => meals.push({ _id: d.id, ...d.data() }));
+        meals.sort((a, b) => new Date(a.loggedAt) - new Date(b.loggedAt));
+        localStorage.setItem('nutriglance_meals', JSON.stringify(meals));
+        return meals;
+      } catch (e) { console.warn('Meals load error:', e); return []; }
+    }
+
+    // Delete all meals from Firestore
+    async function clearAllMealsFromFirestore(uid) {
+      try {
+        const snap = await getDocs(collection(db, 'users', uid, 'meals'));
+        const batch = writeBatch(db);
+        snap.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+      } catch (e) { console.warn('Clear all meals error:', e); }
+    }
+
+    // Load profile from Firestore and cache locally
+    async function loadProfileFromFirestore(uid) {
+      try {
+        const snap = await getDoc(doc(db, 'users', uid));
+        if (snap.exists() && snap.data().profile) {
+          const p = snap.data().profile;
+          localStorage.setItem('nutriglance_profile', JSON.stringify(p));
+          return p;
         }
+      } catch (e) { console.warn('Profile load error:', e); }
+      return null;
+    }
+
+    auth.onAuthStateChanged(async user => {
+      if (!user) { window.location.href = 'login.html'; return; }
+      _uid = user.uid;
+
+      // Load profile
+      await loadProfileFromFirestore(_uid);
+      if (typeof window.updateAvatars === 'function') window.updateAvatars();
+
+      // Load meals from Firestore then re-render
+      await loadMealsFromFirestore(_uid);
+      if (typeof window.refreshAll === 'function') window.refreshAll();
+
+      // Patch clearAllBtn to also delete from Firestore
+      const clearBtn = document.getElementById('clear-all-btn');
+      if (clearBtn) {
+        const origHandler = clearBtn.onclick;
+        clearBtn.addEventListener('click', async () => {
+          // The existing handler (set in the inline script) shows confirm and clears localStorage.
+          // We hook in after a small delay to also purge Firestore.
+          setTimeout(() => {
+            if (!localStorage.getItem('nutriglance_meals') || localStorage.getItem('nutriglance_meals') === '[]') {
+              clearAllMealsFromFirestore(_uid);
+            }
+          }, 300);
+        }, true); // capture phase runs before the inline handler
       }
     });
   </script>
 
 </body>
 </html>
+

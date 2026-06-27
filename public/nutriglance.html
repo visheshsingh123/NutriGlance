@@ -1362,8 +1362,7 @@ All numeric values must be integers. Be realistic and accurate.`;
         }
 
         // Log the meal
-        const allMeals = loadAllMeals();
-        allMeals.push({
+        const newMeal = {
           name:     result.name,
           kcal:     result.kcal,
           protein:  result.protein,
@@ -1371,8 +1370,12 @@ All numeric values must be integers. Be realistic and accurate.`;
           fat:      result.fat,
           loggedAt: new Date().toISOString(),
           source:   'text',
-        });
+        };
+        const allMeals = loadAllMeals();
+        allMeals.push(newMeal);
         saveMeals(allMeals);
+        // Also sync to Firestore
+        if (typeof window._logMealToFirestore === 'function') window._logMealToFirestore(newMeal);
         refresh();
 
         // Show quick confirmation then clear
@@ -1569,8 +1572,11 @@ Scale kcal, protein, carbs and fat to match the piece count or volume you identi
     document.getElementById('result-log-btn').addEventListener('click', () => {
       if (!pendingMeal) return;
       const meals = loadAllMeals(); // load full history so we don't overwrite past days
-      meals.push(pendingMeal);
+      const mealToLog = { ...pendingMeal, loggedAt: pendingMeal.loggedAt || new Date().toISOString() };
+      meals.push(mealToLog);
       saveMeals(meals);
+      // Also sync to Firestore
+      if (typeof window._logMealToFirestore === 'function') window._logMealToFirestore(mealToLog);
       refresh();
       showToast(`✅ Logged: ${pendingMeal.name} (${pendingMeal.kcal} kcal)`);
       pendingMeal = null;
@@ -1597,6 +1603,10 @@ Scale kcal, protein, carbs and fat to match the piece count or volume you identi
         return new Date(m.loggedAt).toDateString() !== todayStr;
       });
       saveMeals(remaining);
+      // Also delete from Firestore
+      if (typeof window._clearTodayMealsFromFirestore === 'function') {
+        window._clearTodayMealsFromFirestore(window._currentUID);
+      }
       refresh();
       showToast('Today\'s meals cleared.');
     });
@@ -1750,10 +1760,15 @@ Scale kcal, protein, carbs and fat to match the piece count or volume you identi
     });
   </script>
 
-  <!-- Firebase SDKs & Auth protection -->
+  <!-- Firebase SDKs, Auth protection & Firestore data sync -->
   <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-    import { getAuth }       from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import { initializeApp }              from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getAuth }                    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import {
+      getFirestore, doc, getDoc, setDoc,
+      collection, addDoc, getDocs, query,
+      where, deleteDoc, Timestamp, writeBatch
+    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
     const firebaseConfig = {
       apiKey:            'AIzaSyDKwXd1HXx0oNriqUOfiP4FOHmNc9L1jbA',
@@ -1765,27 +1780,161 @@ Scale kcal, protein, carbs and fat to match the piece count or volume you identi
       measurementId:     'G-C0B269SQFP',
     };
 
-    const app = initializeApp(firebaseConfig);
+    const app  = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db   = getFirestore(app);
 
-    auth.onAuthStateChanged(user => {
+    // ── Helpers ──────────────────────────────────────────────────────────────
+    const PROFILE_KEY = 'nutriglance_profile';
+    const STORAGE_KEY = 'nutriglance_meals';
+    const WATER_KEY   = 'nutriglance_water';
+
+    // Save profile both to Firestore and localStorage cache
+    async function syncProfileToFirestore(uid, profile) {
+      try {
+        await setDoc(doc(db, 'users', uid), { profile }, { merge: true });
+      } catch (e) { console.warn('Profile sync error:', e); }
+    }
+
+    // Load profile from Firestore and cache locally
+    async function loadProfileFromFirestore(uid) {
+      try {
+        const snap = await getDoc(doc(db, 'users', uid));
+        if (snap.exists() && snap.data().profile) {
+          const p = snap.data().profile;
+          localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
+          return p;
+        }
+      } catch (e) { console.warn('Profile load error:', e); }
+      return null;
+    }
+
+    // Add a single meal to Firestore subcollection
+    window._addMealToFirestore = async function(uid, meal) {
+      try {
+        const ref = await addDoc(collection(db, 'users', uid, 'meals'), {
+          ...meal,
+          loggedAt: meal.loggedAt || new Date().toISOString(),
+          createdAt: Timestamp.now(),
+        });
+        return ref.id;
+      } catch (e) { console.warn('Meal add error:', e); }
+    };
+
+    // Load all meals from Firestore and cache to localStorage
+    async function loadMealsFromFirestore(uid) {
+      try {
+        const snap = await getDocs(collection(db, 'users', uid, 'meals'));
+        const meals = [];
+        snap.forEach(d => meals.push({ _id: d.id, ...d.data() }));
+        // Sort ascending by loggedAt
+        meals.sort((a, b) => new Date(a.loggedAt) - new Date(b.loggedAt));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(meals));
+        return meals;
+      } catch (e) { console.warn('Meals load error:', e); return []; }
+    }
+
+    // Delete today's meals from Firestore
+    window._clearTodayMealsFromFirestore = async function(uid) {
+      try {
+        const todayStr = new Date().toDateString();
+        const snap = await getDocs(collection(db, 'users', uid, 'meals'));
+        const batch = writeBatch(db);
+        snap.forEach(d => {
+          const data = d.data();
+          if (data.loggedAt && new Date(data.loggedAt).toDateString() === todayStr) {
+            batch.delete(d.ref);
+          }
+        });
+        await batch.commit();
+      } catch (e) { console.warn('Clear meals error:', e); }
+    };
+
+    // Save hydration to Firestore under progress/{todayDate}
+    window._saveWaterToFirestore = async function(uid, count) {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        await setDoc(doc(db, 'users', uid, 'progress', today), { water: count }, { merge: true });
+      } catch (e) { console.warn('Water sync error:', e); }
+    };
+
+    // Load hydration from Firestore
+    async function loadWaterFromFirestore(uid) {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const snap = await getDoc(doc(db, 'users', uid, 'progress', today));
+        if (snap.exists() && snap.data().water !== undefined) {
+          return snap.data().water;
+        }
+      } catch (e) { console.warn('Water load error:', e); }
+      return null;
+    }
+
+    // ── Auth state listener ───────────────────────────────────────────────────
+    auth.onAuthStateChanged(async user => {
       if (!user) {
         window.location.href = 'login.html';
-      } else {
-        const PROFILE_KEY = 'nutriglance_profile';
-        let p = null;
-        try { p = JSON.parse(localStorage.getItem(PROFILE_KEY)); } catch (e) {}
-        if (!p || !p.name) {
-          const name = user.displayName || user.email.split('@')[0];
-          const newProfile = { name: name, gender: 'male', age: 28, weight: 68, height: 172, targetKcal: 2100, targetProtein: 90, targetFat: 70, targetCarbs: 200 };
-          localStorage.setItem(PROFILE_KEY, JSON.stringify(newProfile));
-          if (typeof window.updateAvatars === 'function') window.updateAvatars();
-          if (typeof window.refresh === 'function') window.refresh();
-        }
+        return;
       }
+
+      const uid = user.uid;
+      window._currentUID = uid; // expose UID for other functions to use
+
+      // 1. Load profile from Firestore (or create default)
+      let profile = await loadProfileFromFirestore(uid);
+      if (!profile || !profile.name) {
+        const name = user.displayName || user.email.split('@')[0];
+        profile = { name, gender: 'male', age: 28, weight: 68, height: 172, targetKcal: 2100, targetProtein: 90, targetFat: 70, targetCarbs: 200 };
+        localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+        await syncProfileToFirestore(uid, profile);
+      }
+
+      // Apply profile goals to dashboard
+      if (profile.targetKcal) {
+        window.GOALS && (window.GOALS.kcal    = profile.targetKcal);
+        window.GOALS && (window.GOALS.protein = profile.targetProtein);
+        window.GOALS && (window.GOALS.carbs   = profile.targetCarbs);
+        window.GOALS && (window.GOALS.fat     = profile.targetFat);
+      }
+      if (typeof window.syncGoalLabels === 'function') window.syncGoalLabels();
+      if (typeof window.updateAvatars  === 'function') window.updateAvatars();
+
+      // 2. Load meals from Firestore and refresh dashboard
+      await loadMealsFromFirestore(uid);
+      if (typeof window.refresh === 'function') window.refresh();
+
+      // 3. Load today's water count from Firestore
+      const waterCount = await loadWaterFromFirestore(uid);
+      if (waterCount !== null) {
+        const today = new Date().toDateString();
+        localStorage.setItem(WATER_KEY, JSON.stringify({ count: waterCount, date: today }));
+        if (typeof window.renderWater === 'function') window.renderWater();
+      }
+
+      // 4. Patch saveMeals to also write to Firestore
+      const origSaveMeals = window.saveMeals;
+      window.saveMeals = function(meals) {
+        localStorage.setItem('nutriglance_meals', JSON.stringify(meals));
+      };
+
+      // 5. Patch saveWater to also write to Firestore
+      const origSaveWater = window.saveWater;
+      window.saveWater = function(count) {
+        localStorage.setItem(WATER_KEY, JSON.stringify({ count, date: new Date().toDateString() }));
+        window._saveWaterToFirestore(uid, count);
+      };
     });
+
+    // ── Hook: intercept meal additions to also write to Firestore ────────────
+    // We wrap the loadAllMeals + saveMeals pattern in nutriglance.html by
+    // patching the global saveMeals after a meal push — but the cleanest way
+    // is to expose an async addMeal that pages can call.
+    window._logMealToFirestore = async function(meal) {
+      const uid = window._currentUID;
+      if (!uid) return;
+      await window._addMealToFirestore(uid, meal);
+    };
   </script>
 
 </body>
 </html>
-

@@ -741,10 +741,12 @@
     });
   </script>
 
-  <!-- Firebase SDKs & Auth protection -->
+  <!-- Firebase SDKs, Auth protection & Firestore data sync -->
   <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-    import { getAuth }       from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getAuth }         from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import { getFirestore, doc, getDoc }
+      from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
     const firebaseConfig = {
       apiKey:            'AIzaSyDKwXd1HXx0oNriqUOfiP4FOHmNc9L1jbA',
@@ -756,23 +758,31 @@
       measurementId:     'G-C0B269SQFP',
     };
 
-    const app = initializeApp(firebaseConfig);
+    const app  = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db   = getFirestore(app);
 
-    auth.onAuthStateChanged(user => {
-      if (!user) {
-        window.location.href = 'login.html';
-      } else {
-        const PROFILE_KEY = 'nutriglance_profile';
-        let p = null;
-        try { p = JSON.parse(localStorage.getItem(PROFILE_KEY)); } catch (e) {}
-        if (!p || !p.name) {
-          const name = user.displayName || user.email.split('@')[0];
-          const newProfile = { name: name, gender: 'male', age: 28, weight: 68, height: 172, targetKcal: 2100, targetProtein: 90, targetFat: 70, targetCarbs: 200 };
-          localStorage.setItem(PROFILE_KEY, JSON.stringify(newProfile));
-          if (typeof window.updateAvatars === 'function') window.updateAvatars();
+    auth.onAuthStateChanged(async user => {
+      if (!user) { window.location.href = 'login.html'; return; }
+
+      // Load profile from Firestore and cache locally
+      try {
+        const snap = await getDoc(doc(db, 'users', user.uid));
+        if (snap.exists() && snap.data().profile) {
+          const p = snap.data().profile;
+          localStorage.setItem('nutriglance_profile', JSON.stringify(p));
         }
+      } catch (e) { console.warn('Profile load error:', e); }
+
+      // Ensure default profile if still none
+      let p = null;
+      try { p = JSON.parse(localStorage.getItem('nutriglance_profile')); } catch (e) {}
+      if (!p || !p.name) {
+        const name = user.displayName || user.email.split('@')[0];
+        const newProfile = { name, gender: 'male', age: 28, weight: 68, height: 172, targetKcal: 2100, targetProtein: 90, targetFat: 70, targetCarbs: 200 };
+        localStorage.setItem('nutriglance_profile', JSON.stringify(newProfile));
       }
+      if (typeof window.updateAvatars === 'function') window.updateAvatars();
     });
   </script>
 

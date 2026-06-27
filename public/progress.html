@@ -1030,10 +1030,14 @@ document.querySelectorAll('.bottom-nav-link').forEach(link => {
 });
 </script>
 
-  <!-- Firebase SDKs & Auth protection -->
+  <!-- Firebase SDKs, Auth protection & Firestore data sync -->
   <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-    import { getAuth }       from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getAuth }         from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import {
+      getFirestore, doc, getDoc, setDoc,
+      collection, getDocs
+    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
     const firebaseConfig = {
       apiKey:            'AIzaSyDKwXd1HXx0oNriqUOfiP4FOHmNc9L1jbA',
@@ -1045,24 +1049,86 @@ document.querySelectorAll('.bottom-nav-link').forEach(link => {
       measurementId:     'G-C0B269SQFP',
     };
 
-    const app = initializeApp(firebaseConfig);
+    const app  = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db   = getFirestore(app);
 
-    auth.onAuthStateChanged(user => {
-      if (!user) {
-        window.location.href = 'login.html';
-      } else {
-        const PROFILE_KEY = 'nutriglance_profile';
-        let p = null;
-        try { p = JSON.parse(localStorage.getItem(PROFILE_KEY)); } catch (e) {}
-        if (!p || !p.name) {
-          const name = user.displayName || user.email.split('@')[0];
-          const newProfile = { name: name, gender: 'male', age: 28, weight: 68, height: 172, targetKcal: 2100, targetProtein: 90, targetFat: 70, targetCarbs: 200 };
-          localStorage.setItem(PROFILE_KEY, JSON.stringify(newProfile));
-          if (typeof window.updateAvatar === 'function') window.updateAvatar();
-          if (typeof window.renderAll === 'function') window.renderAll();
+    let _uid = null;
+
+    // Load profile from Firestore and cache locally
+    async function loadProfileFromFirestore(uid) {
+      try {
+        const snap = await getDoc(doc(db, 'users', uid));
+        if (snap.exists() && snap.data().profile) {
+          const p = snap.data().profile;
+          localStorage.setItem('nutriglance_profile', JSON.stringify(p));
+          return p;
         }
-      }
+      } catch (e) { console.warn('Profile load error:', e); }
+      return null;
+    }
+
+    // Load all meals from Firestore and cache to localStorage
+    async function loadMealsFromFirestore(uid) {
+      try {
+        const snap = await getDocs(collection(db, 'users', uid, 'meals'));
+        const meals = [];
+        snap.forEach(d => meals.push({ _id: d.id, ...d.data() }));
+        meals.sort((a, b) => new Date(a.loggedAt) - new Date(b.loggedAt));
+        localStorage.setItem('nutriglance_meals', JSON.stringify(meals));
+        return meals;
+      } catch (e) { console.warn('Meals load error:', e); return []; }
+    }
+
+    // Load all manual progress logs from Firestore and merge into localStorage
+    async function loadProgressFromFirestore(uid) {
+      try {
+        const snap = await getDocs(collection(db, 'users', uid, 'progress'));
+        const manualLogs = {};
+        snap.forEach(d => {
+          const data = d.data();
+          // Only restore manual entries (not just water)
+          if (data.kcal !== undefined) {
+            manualLogs[d.id] = data;
+          }
+        });
+        if (Object.keys(manualLogs).length > 0) {
+          localStorage.setItem('nutriglance_progress', JSON.stringify(manualLogs));
+        }
+      } catch (e) { console.warn('Progress load error:', e); }
+    }
+
+    // Save a manual progress entry to Firestore
+    async function saveProgressToFirestore(uid, dateKey, entry) {
+      try {
+        await setDoc(doc(db, 'users', uid, 'progress', dateKey), entry, { merge: true });
+      } catch (e) { console.warn('Progress save error:', e); }
+    }
+
+    auth.onAuthStateChanged(async user => {
+      if (!user) { window.location.href = 'login.html'; return; }
+      _uid = user.uid;
+
+      // Load profile
+      await loadProfileFromFirestore(_uid);
+      if (typeof window.updateAvatar === 'function') window.updateAvatar();
+
+      // Load meals and manual progress from Firestore
+      await loadMealsFromFirestore(_uid);
+      await loadProgressFromFirestore(_uid);
+
+      // Re-render charts and history with fresh data
+      if (typeof window.renderAll === 'function') window.renderAll();
+
+      // Patch saveProgress to also write to Firestore
+      const origSaveProgress = window.saveProgress;
+      window.saveProgress = function(data) {
+        localStorage.setItem('nutriglance_progress', JSON.stringify(data));
+        // Save each manual entry to Firestore
+        Object.keys(data).forEach(dateKey => {
+          saveProgressToFirestore(_uid, dateKey, data[dateKey]);
+        });
+      };
     });
   </script>
 
