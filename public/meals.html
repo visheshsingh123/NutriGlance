@@ -36,7 +36,8 @@
 
   <style>
     *, *::before, *::after { box-sizing: border-box; }
-    body { font-family: 'Inter', sans-serif; transition: background-color 0.3s ease, color 0.3s ease; }
+    html { overflow-x: hidden; }
+    body { font-family: 'Inter', sans-serif; transition: background-color 0.3s ease, color 0.3s ease; overflow-x: hidden; }
 
     /* ── Dark mode ── */
     body.dark { background-color: #0F172A !important; color: #E2E8F0 !important; }
@@ -69,7 +70,7 @@
     body.dark .day-divider { background-color: #0F172A !important; }
 
     /* ── Navbar ── */
-    #mobile-menu { max-height: 0; overflow: hidden; transition: max-height 0.35s ease, opacity 0.3s ease; opacity: 0; }
+    #mobile-menu { max-height: 0; overflow: hidden; transition: max-height 0.35s ease, opacity 0.3s ease; opacity: 0; width: 100%; }
     #mobile-menu.open { max-height: 400px; opacity: 1; }
     .nav-link.active { color: #0F172A; font-weight: 700; }
     .nav-link.active::after { content: ''; display: block; height: 2px; background: #0F172A; border-radius: 2px; margin-top: 2px; }
@@ -139,12 +140,12 @@
   </style>
 </head>
 
-<body class="bg-bg min-h-screen font-body text-charcoal flex flex-col">
+<body class="bg-bg min-h-screen font-body text-charcoal overflow-x-hidden">
 
 <!-- ══════════════════════════════════════════════════════════════
      NAVBAR
 ══════════════════════════════════════════════════════════════ -->
-<nav class="bg-brand shadow-sm sticky top-0 z-40">
+<nav class="bg-brand shadow-sm sticky top-0 z-40 overflow-x-hidden w-full">
   <div class="max-w-5xl mx-auto px-4 sm:px-6">
     <div class="flex items-center justify-between h-14">
 
@@ -249,7 +250,7 @@
 <!-- ══════════════════════════════════════════════════════════════
      MAIN
 ══════════════════════════════════════════════════════════════ -->
-<main class="max-w-5xl mx-auto px-4 py-8 pb-24 md:pb-8 flex-1 w-full">
+<main class="max-w-5xl mx-auto px-4 py-8 pb-24 md:pb-8 w-full">
 
   <!-- Page header -->
   <div class="mb-7 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
@@ -331,7 +332,7 @@
       </div>
       <!-- Date range -->
       <select id="range-select"
-              class="text-sm bg-slate-50 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand font-medium">
+              class="w-full sm:w-auto text-sm bg-slate-50 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand font-medium">
         <option value="all">All time</option>
         <option value="7">Last 7 days</option>
         <option value="30">Last 30 days</option>
@@ -339,7 +340,7 @@
       </select>
       <!-- Sort -->
       <select id="sort-select"
-              class="text-sm bg-slate-50 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand font-medium">
+              class="w-full sm:w-auto text-sm bg-slate-50 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand font-medium">
         <option value="newest">Newest first</option>
         <option value="oldest">Oldest first</option>
         <option value="kcal-high">Highest calorie</option>
