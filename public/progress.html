@@ -1030,5 +1030,41 @@ document.querySelectorAll('.bottom-nav-link').forEach(link => {
 });
 </script>
 
+  <!-- Firebase SDKs & Auth protection -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getAuth }       from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+    const firebaseConfig = {
+      apiKey:            'AIzaSyDKwXd1HXx0oNriqUOfiP4FOHmNc9L1jbA',
+      authDomain:        'nutriglance.firebaseapp.com',
+      projectId:         'nutriglance',
+      storageBucket:     'nutriglance.firebasestorage.app',
+      messagingSenderId: '878128108474',
+      appId:             '1:878128108474:web:76ff47c291dd19593a4383',
+      measurementId:     'G-C0B269SQFP',
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        window.location.href = 'login.html';
+      } else {
+        const PROFILE_KEY = 'nutriglance_profile';
+        let p = null;
+        try { p = JSON.parse(localStorage.getItem(PROFILE_KEY)); } catch (e) {}
+        if (!p || !p.name) {
+          const name = user.displayName || user.email.split('@')[0];
+          const newProfile = { name: name, gender: 'male', age: 28, weight: 68, height: 172, targetKcal: 2100, targetProtein: 90, targetFat: 70, targetCarbs: 200 };
+          localStorage.setItem(PROFILE_KEY, JSON.stringify(newProfile));
+          if (typeof window.updateAvatar === 'function') window.updateAvatar();
+          if (typeof window.renderAll === 'function') window.renderAll();
+        }
+      }
+    });
+  </script>
+
 </body>
 </html>
