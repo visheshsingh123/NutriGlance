@@ -263,6 +263,13 @@
   </div>
 
   <script>
+    // ── Apply dark mode immediately to avoid flash ──
+    (function () {
+      if (localStorage.getItem('nutriglance_darkmode') === '1') {
+        document.body.classList.add('dark');
+      }
+    })();
+
     // Runs immediately, before the rest of the page's content or scripts —
     // shows the onboarding overlay instantly with no flash if (and only if)
     // no profile has been saved to localStorage yet.
@@ -1725,6 +1732,19 @@ Scale kcal, protein, carbs and fat to match the piece count or volume you identi
         document.querySelectorAll('.bottom-nav-link').forEach(l => l.classList.remove('active'));
         e.currentTarget.classList.add('active');
       });
+    });
+
+    // ── Sync dark mode if changed from settings.html (or any other tab) ──
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'nutriglance_darkmode') {
+        document.body.classList.toggle('dark', e.newValue === '1');
+      }
+    });
+
+    // ── Also apply on page focus (user navigates back from settings) ──
+    window.addEventListener('focus', () => {
+      const isDark = localStorage.getItem('nutriglance_darkmode') === '1';
+      document.body.classList.toggle('dark', isDark);
     });
   </script>
 
