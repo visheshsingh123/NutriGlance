@@ -4,9 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NutriGlance – Your Personal AI Dietitian</title>
-    <!-- PWA: manifest + service worker -->
-  <link rel="manifest" href="/manifest.json" />
-  <script>if ("serviceWorker" in navigator) { navigator.serviceWorker.register("/service-worker.js"); }</script>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+CiAgPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTYiIGZpbGw9IiMxMEI5ODEiLz4KICA8cGF0aCBkPSJNMTcgNDQKICAgICAgICAgICBDMTcgMjQsIDMzIDE0LCA0OSAxNQogICAgICAgICAgIEM1MCAzMywgMzkgNDcsIDIxIDQ3CiAgICAgICAgICAgQzE4LjggNDcsIDE3IDQ1LjIsIDE3IDQzIFoiCiAgICAgICAgZmlsbD0iIzBGMTcyQSIvPgo8L3N2Zz4K" />
 
   <!-- Tailwind CSS via CDN -->
@@ -187,16 +184,15 @@
     <div class="bg-card w-full max-w-md rounded-2xl shadow-xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
 
       <div class="text-center mb-6">
-        <!-- Waving hand emoji as a friendly welcome icon -->
-        <div class="text-4xl mb-3 select-none">👋</div>
-        <!-- Greeting line — name is injected by the Firebase auth listener -->
-        <h2 class="font-display text-2xl font-extrabold text-charcoal">
-          Hello, <span id="onb-greeting-name">there</span>!
-        </h2>
-        <p class="text-sm text-muted mt-1.5">
-          Welcome to NutriGlance! Tell us a bit about yourself so we can<br class="hidden sm:block" />
-          calculate your personalised daily nutrition targets.
-        </p>
+        <div class="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-3">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/>
+            <path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+            <line x1="7" y1="12" x2="17" y2="12"/>
+          </svg>
+        </div>
+        <h2 class="font-display text-2xl font-extrabold text-charcoal">Let's set up your goals</h2>
+        <p class="text-sm text-muted mt-1.5">A few quick details so NutriGlance can personalise your daily targets.</p>
       </div>
 
       <form id="onboarding-form" class="flex flex-col gap-5" novalidate>
@@ -273,8 +269,15 @@
         document.body.classList.add('dark');
       }
     })();
-    // Onboarding is now controlled exclusively by the Firebase auth listener below.
-    // It only shows once — when the user has no profile saved in Firestore.
+
+      } catch {
+        hasProfile = false;
+      }
+      if (!hasProfile) {
+        document.getElementById('onboarding-overlay').classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+      }
+    })();
   </script>
 
   <!-- ════════════════════════════════════════════════════════════════
@@ -1195,13 +1198,10 @@
       const targets = calculateTargets({ gender, age, weight, height });
 
       // Save profile + calculated targets to localStorage
-      const profileData = { name, gender, age, weight, height, ...targets };
-      saveProfile(profileData);
-
-      // Also save to Firestore immediately (first-time account setup)
-      if (window._currentUID && typeof window._syncProfileToFirestore === 'function') {
-        window._syncProfileToFirestore(window._currentUID, profileData);
-      }
+      saveProfile({
+        name, gender, age, weight, height,
+        ...targets,
+      });
 
       // ── Submit onboarding data to Google Sheets via Google Forms ──
       (function submitToGoogleForms() {
@@ -1789,9 +1789,6 @@ Scale kcal, protein, carbs and fat to match the piece count or volume you identi
       } catch (e) { console.warn('Profile sync error:', e); }
     }
 
-    // Expose so the onboarding submit handler (non-module script) can call it
-    window._syncProfileToFirestore = syncProfileToFirestore;
-
     // Load profile from Firestore and cache locally
     async function loadProfileFromFirestore(uid) {
       try {
@@ -1876,32 +1873,24 @@ Scale kcal, protein, carbs and fat to match the piece count or volume you identi
       const uid = user.uid;
       window._currentUID = uid; // expose UID for other functions to use
 
-      // 1. Load profile from Firestore (source of truth for first-time check)
+      // 1. Load profile from Firestore
       let profile = await loadProfileFromFirestore(uid);
 
       if (!profile || !profile.name) {
-        // ── NEW USER — show onboarding modal with personalised greeting ──────
-        // Derive a friendly first name: use Firebase displayName, or the part
-        // of the email address before the @ sign.
-        const authName = user.displayName
-          ? user.displayName.split(' ')[0]          // first name only
-          : user.email.split('@')[0];
-
-        // Populate the greeting span ("Hello, Alex!")
-        const greetingSpan = document.getElementById('onb-greeting-name');
-        if (greetingSpan) greetingSpan.textContent = authName;
-
-        // Pre-fill the Name field so the user doesn't have to retype it
+        // NEW USER — pre-fill name from Firebase and show onboarding modal
+        const authName = user.displayName || user.email.split('@')[0];
         const nameInput = document.getElementById('onb-name');
         if (nameInput && !nameInput.value) nameInput.value = authName;
 
-        // Show the onboarding overlay
+        // Show onboarding overlay
         const overlay = document.getElementById('onboarding-overlay');
         overlay.classList.remove('hidden');
         document.body.classList.add('overflow-hidden');
 
+        // After they submit the onboarding form, also sync to Firestore
+        // (saveProfile is already patched below to write to Firestore)
       } else {
-        // ── RETURNING USER — apply saved profile goals to dashboard ──────────
+        // RETURNING USER — apply profile goals
         if (profile.targetKcal) {
           window.GOALS && (window.GOALS.kcal    = profile.targetKcal);
           window.GOALS && (window.GOALS.protein = profile.targetProtein);
