@@ -1,1 +1,8 @@
-
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.nutriglance.twa",
+        "sha256_cert_fingerprints": ["05:49:8C:A0:F2:4D:95:6B:34:A4:BE:5A:C8:C6:D4:12:EA:FE:CE:A3:14:D2:79:61:96:1E:06:EF:77:CB:AC:60"]
+      }
+    }]
