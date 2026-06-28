@@ -1,4 +1,5 @@
 {
+  "id": "/nutriglance.html",
   "name": "NutriGlance",
   "short_name": "NutriGlance",
   "description": "Your personal AI dietitian — track meals, macros and hydration.",
@@ -7,6 +8,16 @@
   "orientation": "portrait",
   "background_color": "#EFF7F4",
   "theme_color": "#10B981",
+  "categories": ["health", "fitness", "food"],
+  "screenshots": [
+    {
+      "src": "/icons/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "NutriGlance Dashboard"
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",
