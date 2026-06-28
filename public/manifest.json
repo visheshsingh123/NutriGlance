@@ -11,11 +11,39 @@
   "categories": ["health", "fitness", "food"],
   "screenshots": [
     {
-      "src": "/icons/screenshot-mobile.png",
-      "sizes": "390x844",
+      "src": "/sc/sc1.png",
+      "sizes": "1084x2412",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "NutriGlance Dashboard"
+      "label": "Dashboard — track daily calories and macros"
+    },
+    {
+      "src": "/sc/sc2.png",
+      "sizes": "1084x2412",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Meals — your full meal log"
+    },
+    {
+      "src": "/sc/sc3.png",
+      "sizes": "1084x2412",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "AI food analysis — log a meal instantly"
+    },
+    {
+      "src": "/sc/sc4.png",
+      "sizes": "1084x2412",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Progress — calorie history and trends"
+    },
+    {
+      "src": "/sc/sc5.png",
+      "sizes": "1084x2412",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Home — AI-powered nutrition"
     }
   ],
   "icons": [
