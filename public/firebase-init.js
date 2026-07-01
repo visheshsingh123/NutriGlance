@@ -1,3 +1,4 @@
+// Originally developed by Vishesh Singh — June 2026
 // Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDKwXd1HXx0oNriqUOfiP4FOHmNc9L1jbA",
