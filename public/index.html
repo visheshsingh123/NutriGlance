@@ -4,7 +4,103 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NutriGlance – Your Personal AI Dietitian</title>
+  <title>NutriGlance AI – AI Calorie Tracker & Meal Scanner App</title>
+  <meta name="description" content="NutriGlance AI is an AI calorie tracker that reads your meal photos and instantly logs calories, protein, carbs and fibre — no manual entry, no food-database searching." />
+  <meta name="keywords" content="NutriGlance, NutriGlance AI, NutriGlanceAI, AI calorie tracker, calorie tracker app, meal scanner, AI dietitian, macro tracker" />
+  <link rel="canonical" href="https://nutriglance.vercel.app/" />
+  <meta name="theme-color" content="#10B981" />
+
+  <!-- Open Graph / Facebook / WhatsApp / LinkedIn -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://nutriglance.vercel.app/" />
+  <meta property="og:site_name" content="NutriGlance AI" />
+  <meta property="og:title" content="NutriGlance AI – AI Calorie Tracker & Meal Scanner App" />
+  <meta property="og:description" content="NutriGlance is an AI calorie tracker that reads your meal photos and instantly logs calories, protein, carbs and fibre — no manual entry, no searching." />
+  <meta property="og:image" content="https://nutriglance.vercel.app/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="NutriGlance AI – AI Calorie Tracker & Meal Scanner App" />
+  <meta name="twitter:description" content="NutriGlance is an AI calorie tracker that reads your meal photos and instantly logs calories, protein, carbs and fibre — no manual entry, no searching." />
+  <meta name="twitter:image" content="https://nutriglance.vercel.app/og-image.png" />
+
+  <!-- Structured data: helps Google understand this as a software app -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "NutriGlance",
+    "alternateName": "NutriGlance AI Calorie Tracker",
+    "applicationCategory": "HealthApplication",
+    "operatingSystem": "Web, Android",
+    "description": "NutriGlance is an AI calorie tracker and meal scanner that reads your meal photos and instantly logs calories, protein, carbs and fibre — no manual entry, no food-database searching.",
+    "url": "https://nutriglance.vercel.app/",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
+
+  <!-- Organization / brand identity — helps Google associate name variants
+       (NutriGlance, NutriGlance AI, NutriGlanceAI) with this single site -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "NutriGlance",
+    "alternateName": ["NutriGlance AI", "NutriGlanceAI", "Nutri Glance"],
+    "url": "https://nutriglance.vercel.app/",
+    "description": "NutriGlance AI is an AI calorie tracker and meal scanner app.",
+    "sameAs": []
+  }
+  </script>
+
+  <!-- FAQ structured data — eligible for rich snippets in Google -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is an AI calorie tracker?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "An AI calorie tracker uses image recognition to identify the food in a photo and estimate its nutrition automatically, instead of manually searching a food database and logging portions."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How accurate is NutriGlance's meal scanning?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "NutriGlance identifies each item on your plate and cross-references portion size and ingredients to estimate calories and macros. Accuracy improves with clear, well-lit photos, and entries can be fine-tuned after logging."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is NutriGlance free to use?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "You can start tracking meals with NutriGlance for free — snap a photo, log macros, and see your daily progress without setting up a manual food diary."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How is an AI calorie tracker different from MyFitnessPal-style apps?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Traditional calorie tracker apps rely on searching a food database and entering portions by hand. NutriGlance replaces that with a single photo, so tracking a meal takes seconds instead of minutes."
+        }
+      }
+    ]
+  }
+  </script>
+
     <!-- PWA: manifest + service worker -->
   <link rel="manifest" href="/manifest.json" />
   <script>if ("serviceWorker" in navigator) { navigator.serviceWorker.register("/service-worker.js"); }</script>
@@ -173,6 +269,7 @@
           <a href="#how-it-works" class="px-4 py-1.5 text-sm text-charcoal/80 rounded-lg hover:bg-white/20 hover:text-charcoal transition-colors">How it works</a>
           <a href="#features" class="px-4 py-1.5 text-sm text-charcoal/80 rounded-lg hover:bg-white/20 hover:text-charcoal transition-colors">Features</a>
           <a href="#ai-chef" class="px-4 py-1.5 text-sm text-charcoal/80 rounded-lg hover:bg-white/20 hover:text-charcoal transition-colors">AI Chef</a>
+          <a href="#faq" class="px-4 py-1.5 text-sm text-charcoal/80 rounded-lg hover:bg-white/20 hover:text-charcoal transition-colors">FAQ</a>
         </div>
 
         <!-- Desktop right: dark mode toggle + CTA into the app -->
@@ -215,6 +312,7 @@
         <a href="#how-it-works" class="px-3 py-2.5 rounded-xl text-sm font-medium text-charcoal/80 hover:bg-white/20 hover:text-charcoal transition-colors">How it works</a>
         <a href="#features" class="px-3 py-2.5 rounded-xl text-sm font-medium text-charcoal/80 hover:bg-white/20 hover:text-charcoal transition-colors">Features</a>
         <a href="#ai-chef" class="px-3 py-2.5 rounded-xl text-sm font-medium text-charcoal/80 hover:bg-white/20 hover:text-charcoal transition-colors">AI Chef</a>
+        <a href="#faq" class="px-3 py-2.5 rounded-xl text-sm font-medium text-charcoal/80 hover:bg-white/20 hover:text-charcoal transition-colors">FAQ</a>
 
         <!-- Dark Mode toggle (mobile) -->
         <div class="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-charcoal/80">
@@ -273,7 +371,7 @@
     <!-- Left: copy + CTAs -->
     <div>
       <span class="inline-block text-brand text-xs font-bold uppercase tracking-wider mb-3">
-        AI-powered nutrition
+        AI Calorie Tracker & Meal Scanner
       </span>
       <h1 class="font-display text-4xl sm:text-5xl font-extrabold leading-tight text-charcoal">
         Snap a photo.<br/>
@@ -281,7 +379,7 @@
         in seconds.
       </h1>
       <p class="text-muted text-base sm:text-lg leading-relaxed mt-5 max-w-md">
-        NutriGlance reads your meal photos and instantly logs calories, protein, carbs and fibre —
+        NutriGlance is an AI calorie tracker that reads your meal photos and instantly logs calories, protein, carbs and fibre —
         no manual entry, no food-database searching. Just snap, glance, and go.
       </p>
 
@@ -528,8 +626,36 @@
     </section>
 
     <!-- ════════════════════════════════════════════════════════════
-         TESTIMONIALS
-    ════════════════════════════════════════════════════════════════ --><!-- ════════════════════════════════════════════════════════════
+         FAQ — targets long-tail search queries around
+         "AI calorie tracker" and earns FAQ rich snippets in Google
+    ════════════════════════════════════════════════════════════════ -->
+    <section id="faq" class="max-w-3xl mx-auto px-4 sm:px-6 py-16">
+      <div class="text-center max-w-lg mx-auto mb-10">
+        <span class="inline-block text-brand text-xs font-bold uppercase tracking-wider mb-2">FAQ</span>
+        <h2 class="font-display text-3xl font-extrabold text-charcoal">AI calorie tracker, answered</h2>
+      </div>
+
+      <div class="flex flex-col gap-4">
+        <div class="reveal bg-card rounded-2xl p-6 shadow-sm">
+          <h3 class="font-display text-base font-extrabold text-charcoal">What is an AI calorie tracker?</h3>
+          <p class="text-sm text-muted mt-2 leading-relaxed">An AI calorie tracker uses image recognition to identify the food in a photo and estimate its nutrition automatically. Instead of manually searching a food database and logging portions, you take a photo and the app calculates calories, protein, carbs and fibre for you.</p>
+        </div>
+        <div class="reveal bg-card rounded-2xl p-6 shadow-sm">
+          <h3 class="font-display text-base font-extrabold text-charcoal">How accurate is NutriGlance's meal scanning?</h3>
+          <p class="text-sm text-muted mt-2 leading-relaxed">NutriGlance identifies each item on your plate and cross-references portion size and ingredients to estimate calories and macros. As with any photo-based estimate, accuracy improves with clear, well-lit photos, and you can always fine-tune an entry after it's logged.</p>
+        </div>
+        <div class="reveal bg-card rounded-2xl p-6 shadow-sm">
+          <h3 class="font-display text-base font-extrabold text-charcoal">Is NutriGlance free to use?</h3>
+          <p class="text-sm text-muted mt-2 leading-relaxed">You can start tracking meals with NutriGlance for free — snap a photo, log macros, and see your daily progress without setting up a manual food diary.</p>
+        </div>
+        <div class="reveal bg-card rounded-2xl p-6 shadow-sm">
+          <h3 class="font-display text-base font-extrabold text-charcoal">How is an AI calorie tracker different from MyFitnessPal-style apps?</h3>
+          <p class="text-sm text-muted mt-2 leading-relaxed">Traditional calorie tracker apps rely on you searching a food database and entering portions by hand. NutriGlance removes that step — a single photo replaces the search-and-log process, so tracking a meal takes seconds instead of minutes.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════
          FINAL CTA
     ════════════════════════════════════════════════════════════════ -->
     <section class="bg-charcoal">
